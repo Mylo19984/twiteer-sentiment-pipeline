@@ -5,10 +5,10 @@ import json
 # import searchrecenttweetsConversation as search_conv
 import tweet_search as search_tweet
 from datetime import datetime, timedelta
-# import helper; uvezi ovo je za config parser
+import custom_func
 import os
 
-config = helper.read_config()
+config = custom_func.read_config()
 
 
 date_yesterday = datetime.now().date() - timedelta(days=1)
@@ -43,4 +43,4 @@ if __name__ == '__main__':
     curr_timestamp = int(datetime.timestamp(datetime.now()))
     path = os.path.abspath(f'{path_folder}tweets_{file_name}_{date_for_file_name}_{curr_timestamp}.csv')
     df_search = search_tweet.get_recent_tweets(query_string, token, start_time, end_time)
-    helper.save(df_search, path)
+    custom_func.save(df_search, path)
