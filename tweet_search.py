@@ -4,16 +4,14 @@ import time
 import pandas as pd
 import boto3
 import json
-import requests
 import configparser
 import time
 from pymongo import MongoClient
+from datetime import datetime
 
-def get_recent_user_tweets (query_string, token, start_time, end_time):
-    """
-    gets data frame of tweets based on the search string
-    search string can either be hashtag or conversation id
-    returns data frame of tweets
+def get_recent_user_tweets (query_string: str, token: str, start_time: datetime, end_time: datetime) -> pd.DataFrame :
+    """ Pulls tweets from the specific user from twitter
+    
     """
 
     hoax_tweets = []
