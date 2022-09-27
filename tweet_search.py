@@ -2,13 +2,12 @@ import pandas
 import tweepy
 import time
 import pandas as pd
-import numpy as np
-import re
 import boto3
 import json
 import requests
 import configparser
 import time
+from pymongo import MongoClient
 
 def get_recent_user_tweets (query_string, token, start_time, end_time):
     """
@@ -42,7 +41,6 @@ def get_recent_user_tweets (query_string, token, start_time, end_time):
 # get responses from tweet call
     if response[0] != None:
         for response in hoax_tweets:
-            print(response)
     # get users data from tweet call
             for user in response.includes['users']:
                 user_dict[user.id] = {'username': user.username,
@@ -63,8 +61,6 @@ def get_recent_user_tweets (query_string, token, start_time, end_time):
 
 
             for tweet in response.data:
-                print(tweet)
-                print(type(tweet))
                 author_info = user_dict[tweet.author_id]
                 # check the code below!!!
                 #media_info = {'type': ''} if get_attachment_key(tweet['attachments']) == '' else media_dict[get_attachment_key(tweet['attachments'])]
@@ -179,31 +175,42 @@ def get_recent_tweets (query_string, token, start_time, end_time):
     return df
 
 def write_tweets_s3_bucket(df: pandas.DataFrame) -> None:
-    """ Writes weekly players data from fpl api to s3
+    """ Writes tweet data from twitter to s3, in json format
 
-    :param ti: used for xcom pull, task_instance
 
-    :param num_players: used to control number of players pulled to s3, for testing purpose
+    :param df: DataFrame which is forwarded from function which pulls data
     """
 
     s3 = create_boto3(True)
 
-    print('Copying json ply data to s3')
-    num_s3_ply_data = 0
+    print('Copying json data to s3')
 
-    # !!! add data flow
-    # !!! changed to 15; num_players
     json_file = df.to_json(orient='records')
 
-    time.sleep(0.2)
     s3object = s3.Object('mylosh', F'tweet/elon.json')
     s3object.put(
-        Body=(bytes(json.dumps(json_file).encode('UTF-8')))
+        Body=(bytes(json_file.encode('UTF-8'))), ContentType='application/json'
     )
 
+    print('Finished copying json data')
 
-    #print(F'Finished copying ply data jsons, total: {num_s3_ply_data}')
+def write_tweets_s3_mongodb() -> None:
+    """ Writes twitter data from s3 to mongodb
 
+    """
+
+    s3 = create_boto3(False)
+
+    obj = s3.get_object(Bucket='mylosh', Key=F'tweet/elon.json')
+    j = json.loads(obj['Body'].read().decode())
+
+    print('mongo db part start')
+
+    client = MongoClient("mongodb://localhost:27017/", username= 'rootuser', password= 'rootpass')
+    mylo_db = client["mylocode"]
+    mylo_db.tweet.insert_many(j)
+
+    print('mongo db part end')
 
 def create_boto3(resource: bool) -> boto3:
 

@@ -47,8 +47,4 @@ path = os.path.abspath(f'{path_folder}tweets_{file_name}_{date_for_file_name}_{c
 df_search = search_tweet.get_recent_user_tweets(query_string, token, start_time, end_time)
 custom_func.save(df_search, path)
 search_tweet.write_tweets_s3_bucket(df_search)
-
-
-# fokus na: get_recent_tweets
-
-# povuci fajl za configurator
+search_tweet.write_tweets_s3_mongodb()
