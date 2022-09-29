@@ -1,6 +1,4 @@
-import pandas
 import tweepy
-import time
 import pandas as pd
 import boto3
 import json
@@ -11,7 +9,7 @@ from datetime import datetime
 
 def get_recent_user_tweets (query_string: str, token: str, start_time: datetime, end_time: datetime) -> pd.DataFrame :
     """ Pulls tweets from the specific user from twitter
-    
+
     """
 
     hoax_tweets = []
@@ -27,7 +25,6 @@ def get_recent_user_tweets (query_string: str, token: str, start_time: datetime,
                                  start_time = start_time,
                                  end_time = end_time,
                              max_results=100):
-
 
         time.sleep(0.5)
         hoax_tweets.append(response)
@@ -52,15 +49,14 @@ def get_recent_user_tweets (query_string: str, token: str, start_time: datetime,
             # get media files if exists
             try:
                 for m in response.includes['media']:
-                    media_dict[m.media_key] = {'type': m.type
-                                            }
+                    media_dict[m.media_key] = {'type': m.type}
             except KeyError:
                 pass
 
 
             for tweet in response.data:
                 author_info = user_dict[tweet.author_id]
-                # check the code below!!!
+                # restructure !!!
                 #media_info = {'type': ''} if get_attachment_key(tweet['attachments']) == '' else media_dict[get_attachment_key(tweet['attachments'])]
         # creating the dictionary from tweet and user data and media data
                 result.append({'author_id': tweet.author_id,
@@ -172,7 +168,7 @@ def get_recent_tweets (query_string, token, start_time, end_time):
 
     return df
 
-def write_tweets_s3_bucket(df: pandas.DataFrame) -> None:
+def write_tweets_s3_bucket(df: pd.DataFrame) -> None:
     """ Writes tweet data from twitter to s3, in json format
 
 
