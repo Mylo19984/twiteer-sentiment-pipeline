@@ -202,7 +202,7 @@ def write_tweets_s3_mongodb() -> None:
 
     client = MongoClient("mongodb://localhost:27017/", username= 'rootuser', password= 'rootpass')
     mylo_db = client["mylocode"]
-    mylo_db.tweet.insert_many(j)
+    mylo_db.tweet_raw.insert_many(j)
 
     print('mongo db part end')
 
