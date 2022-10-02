@@ -7,7 +7,8 @@ import time
 from pymongo import MongoClient
 from datetime import datetime
 
-def get_recent_user_tweets (query_string: str, token: str, start_time: datetime, end_time: datetime) -> pd.DataFrame :
+
+def get_recent_user_tweets (query_string: str, token: str, start_time: datetime, end_time: datetime, since_id: str) -> pd.DataFrame :
     """ Pulls tweets from the specific user from twitter
 
     """
@@ -24,6 +25,7 @@ def get_recent_user_tweets (query_string: str, token: str, start_time: datetime,
                                  expansions = ['author_id', 'referenced_tweets.id', 'attachments.media_keys'],
                                  start_time = start_time,
                                  end_time = end_time,
+                                 since_id = since_id,
                              max_results=100):
 
         time.sleep(0.5)
@@ -83,6 +85,7 @@ def get_recent_user_tweets (query_string: str, token: str, start_time: datetime,
     df = pd.DataFrame(result)
 
     return df
+
 
 def get_recent_tweets (query_string, token, start_time, end_time):
     """
@@ -168,6 +171,7 @@ def get_recent_tweets (query_string, token, start_time, end_time):
 
     return df
 
+
 def write_tweets_s3_bucket(df: pd.DataFrame) -> None:
     """ Writes tweet data from twitter to s3, in json format
 
@@ -188,6 +192,7 @@ def write_tweets_s3_bucket(df: pd.DataFrame) -> None:
 
     print('Finished copying json data')
 
+
 def write_tweets_s3_mongodb() -> None:
     """ Writes twitter data from s3 to mongodb
 
@@ -202,9 +207,15 @@ def write_tweets_s3_mongodb() -> None:
 
     client = MongoClient("mongodb://localhost:27017/", username= 'rootuser', password= 'rootpass')
     mylo_db = client["mylocode"]
-    mylo_db.tweet_raw.insert_many(j)
+    try:
+        mylo_db.tweet_raw.insert_many(j)
+    except Exception as e:
+        print('Exception happened, it is', e.__class__)
+    else:
+        mylo_db.tweet_raw.insert_many(j)
 
     print('mongo db part end')
+
 
 def create_boto3(resource: bool) -> boto3:
 

@@ -24,6 +24,8 @@ end_time = F'{end_date}T12:00:00Z'
 print(end_time)
 # file name, main part
 file_name = 'elon_no1'
+# highest tweet id, thus dont pull dpulicates
+highest_tweet_id = '1576537774332596224'
 
 path_folder = config['twitterApi']['path']
 
@@ -33,7 +35,8 @@ date_for_file_name = datetime_for_file_name.date()
 
 #path = os.path.abspath(f'{path_folder}tweets_{file_name}_{date_for_file_name}.json')
 
-df_search = search_tweet.get_recent_user_tweets(query_string, token, start_time, end_time)
-custom_func.save(df_search, 'data/mmm.csv')
+df_search = search_tweet.get_recent_user_tweets(query_string, token, start_time, end_time, highest_tweet_id)
+custom_func.save(df_search, 'data/mmm.json')
+#print(F'highest id:{df_search["tweet_id"][0]}')
 search_tweet.write_tweets_s3_bucket(df_search)
 search_tweet.write_tweets_s3_mongodb()
