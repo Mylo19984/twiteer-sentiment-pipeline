@@ -3,12 +3,10 @@ from pyspark.sql.types import StructField, FloatType, LongType
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from transformers import pipeline
 import configparser
-import json
 from pyspark.sql.functions import *
 from pymongo import MongoClient
-from tweet_search import create_boto3
-from pyspark_transformation_func import remove_punctuation, remove_users, remove_links, remove_hashtag
-from pyspark_transformation_func import transformation_date, create_schema
+from pyspark_func import remove_punctuation, remove_users, remove_links, remove_hashtag
+from pyspark_func import transformation_date, create_schema, pulling_json_s3
 
 
 config_obj = configparser.ConfigParser()
@@ -18,18 +16,36 @@ aws_user = config_obj["aws"]
 
 
 def berta_classifier_sentiment_lable(text):
+    """ Creates label for tweet text; it can be negative, neutral or positive
+
+    :param text: the tweet text which should be analysed
+
+    :return: sentiment label of the tweet
+    """
 
     text = classifier_berta(text)
     return text[0]['label']
 
 
 def berta_classifier_sentiment_score(text):
+    """ Creates score for tweet text
+
+    :param text: the tweet text which should be analysed
+
+    :return: sentiment score of the tweet
+    """
 
     text = classifier_berta(text)
     return text[0]['score']
 
 
 def clean_tweet_text(df):
+    """ Creates new text column for further use in transformation process
+
+    :param df: dataframe with tweet data which should be transformed
+
+    :return: dataframe with new column cleaned_tweet_text
+    """
 
     df_clean_text = df.withColumn('cleaned_tweet_text', remove_links(col('text')))
     df_clean_text = df_clean_text.withColumn('cleaned_tweet_text', remove_users(col('cleaned_tweet_text')))
@@ -40,20 +56,19 @@ def clean_tweet_text(df):
 
 
 def add_sentiment_columns(df):
+    """ Creates 2 new columns: snetiment analysis label and sentiment analysis score
+
+    :param df: dataframe which should be transformed
+
+    :return: dataframe with new columns - berta_sent_analysis_label and berta_sent_analysis_score
+    """
+
     df_sentiment_label = df.withColumn('berta_sent_analysis_label',
                                         berta_classifier_sentiment_lable(col('cleaned_tweet_text')))
     df_sentiment_label = df_sentiment_label.withColumn('berta_sent_analysis_score',
                                         berta_classifier_sentiment_score(col('cleaned_tweet_text')))
 
     return df_sentiment_label
-
-
-def pulling_json_s3():
-    s3 = create_boto3(False)
-    obj = s3.get_object(Bucket='mylosh', Key=F'tweet/elon.json')
-    json_file = json.loads(obj['Body'].read().decode())
-
-    return json_file
 
 
 # creation of connection to s3, and getting the json file
