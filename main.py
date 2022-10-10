@@ -4,8 +4,10 @@ from datetime import datetime, timedelta
 
 
 config = read_config()
-
 time_interval = True
+ct = datetime.now()
+ts = ct.timestamp()
+
 if time_interval == True:
     begin_date = datetime.now().date() - timedelta(days=10)
     end_date = datetime.now().date()
@@ -17,16 +19,15 @@ query_string = '44196397'
 token = config['twitterApi']['btoken']
 # start time of pulling tweets
 start_time = F'{begin_date}T00:00:00Z'
-print(start_time)
 # end time of pulling tweets
 end_time = F'{end_date}T12:00:00Z'
-print(end_time)
 # file name
-file_name = 'el'
+file_name = F'id_{query_string}_{ts}'
 # highest tweet id, from which function will pull tweets
 highest_tweet_id = get_last_tweet_id() if len(get_last_tweet_id()) > 0 else 1
+highest_tweet_id = 1579067179659845633
 
 df_search = get_recent_user_tweets(query_string, token, start_time, end_time, highest_tweet_id)
 save(df_search, F'data/{file_name}.json')
-write_tweets_s3_bucket(df_search)
+write_tweets_s3_bucket(df_search, file_name)
 write_tweets_s3_mongodb()

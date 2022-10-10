@@ -186,10 +186,12 @@ def get_recent_tweets (query_string, token, start_time, end_time) -> pd.DataFram
     return df
 
 
-def write_tweets_s3_bucket(df: pd.DataFrame) -> None:
+def write_tweets_s3_bucket(df: pd.DataFrame, file_name: str) -> None:
     """ Writes tweet data from twitter to s3, in json format
 
     :param df: DataFrame which is forwarded from function which pulls data
+
+    :param file_name: String in which name of the file is being kept
     """
 
     s3 = create_boto3(True)
@@ -198,7 +200,7 @@ def write_tweets_s3_bucket(df: pd.DataFrame) -> None:
 
     json_file = df.to_json(orient='records')
 
-    s3object = s3.Object('mylosh', F'tweet/elon.json')
+    s3object = s3.Object('mylosh', F'tweet/{file_name}.json')
     s3object.put(
         Body=(bytes(json_file.encode('UTF-8'))), ContentType='application/json'
     )
@@ -213,7 +215,13 @@ def write_tweets_s3_mongodb() -> None:
 
     s3 = create_boto3(False)
 
-    obj = s3.get_object(Bucket='mylosh', Key=F'tweet/elon.json')
+    data_bucket = s3.list_objects(Bucket='mylosh', Prefix='tweet/')['Contents']
+
+    # getting the last modified date file on s3
+    # get_last_modified = lambda obj: int(obj['LastModified'].strftime('%s'))
+    l = [obj['Key'] for obj in sorted(data_bucket, key=lambda obj: int(obj['LastModified'].strftime('%s')), reverse=True)]
+
+    obj = s3.get_object(Bucket='mylosh', Key=l[0])
     j = json.loads(obj['Body'].read().decode())
 
     print('mongo db part start')
