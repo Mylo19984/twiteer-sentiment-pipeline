@@ -46,46 +46,51 @@ def get_recent_user_tweets (query_string: str, token: str, start_time: datetime,
     user_dict = {}
     media_dict = {}
 
-# get responses from tweet call
-    #if response[0] != None:
     for response in hoax_tweets:
-# get users data from tweet call
-        for user in response.includes['users']:
-            user_dict[user.id] = {'username': user.username,
-                          'followers': user.public_metrics['followers_count'],
-                          'tweets': user.public_metrics['tweet_count'],
-                          'description': user.description,
-                          'location': user.location,
-                          #'imageUrl': user.profile_image_url
-                         }
+        # print(response.data)
+        # get users data from tweet call
+        try:
+            for user in response.includes['users']:
+                user_dict[user.id] = {'username': user.username,
+                              'followers': user.public_metrics['followers_count'],
+                              'tweets': user.public_metrics['tweet_count'],
+                              'description': user.description,
+                              'location': user.location,
+                             }
 
-        for tweet in response.data:
-            author_info = user_dict[tweet.author_id]
-            # restructure !!!
-            #media_info = {'type': ''} if get_attachment_key(tweet['attachments']) == '' else media_dict[get_attachment_key(tweet['attachments'])]
-    # creating the dictionary from tweet and user data and media data
-            result.append({'author_id': tweet.author_id,
-                   'username': author_info['username'],
-                   'author_followers': author_info['followers'],
-                   'author_tweets': author_info['tweets'],
-                   #'author_image': author_info['imageUrl'],
-                   'author_description': author_info['description'],
-                   'author_location': author_info['location'],
-                   'tweet_id': tweet.id,
-                   'text': tweet.text,
-                   'created_at': tweet.created_at,
-                   'retweets': tweet.public_metrics['retweet_count'],
-                   'replies': tweet.public_metrics['reply_count'],
-                   'likes': tweet.public_metrics['like_count'],
-                   'quote_count': tweet.public_metrics['quote_count'],
-                   'referenced_tweets_list': tweet.referenced_tweets,
-                   #'referenced_tweet': get_ref_tweet(tweet.referenced_tweets),
-                   #'referenced_tweet_type': get_ref_tweet_type(tweet.referenced_tweets),
-                   'conversation_id': tweet.conversation_id,
-                   'attach_list': tweet['attachments']
-                  })
+            for tweet in response.data:
+                author_info = user_dict[tweet.author_id]
+                # restructure
+                # media_info = {'type': ''} if get_attachment_key(tweet['attachments']) == '' else media_dict[get_attachment_key(tweet['attachments'])]
+                # creating the dictionary from tweet and user data and media data
+                result.append({'author_id': tweet.author_id,
+                       'username': author_info['username'],
+                       'author_followers': author_info['followers'],
+                       'author_tweets': author_info['tweets'],
+                       #'author_image': author_info['imageUrl'],
+                       'author_description': author_info['description'],
+                       'author_location': author_info['location'],
+                       'tweet_id': tweet.id,
+                       'text': tweet.text,
+                       'created_at': tweet.created_at,
+                       'retweets': tweet.public_metrics['retweet_count'],
+                       'replies': tweet.public_metrics['reply_count'],
+                       'likes': tweet.public_metrics['like_count'],
+                       'quote_count': tweet.public_metrics['quote_count'],
+                       'referenced_tweets_list': tweet.referenced_tweets,
+                       #'referenced_tweet': get_ref_tweet(tweet.referenced_tweets),
+                       #'referenced_tweet_type': get_ref_tweet_type(tweet.referenced_tweets),
+                       'conversation_id': tweet.conversation_id,
+                       'attach_list': tweet['attachments']
+                      })
 
+        except Exception as e:
+            print(F'Error ocured: {e.__class__}')
+            pass
+
+    #save_last_tweet_id(result[0]['tweet_id'])
     df = pd.DataFrame(result)
+    print(F'Number of tweets: {df.shape[0]}')
 
     return df
 
@@ -126,10 +131,10 @@ def get_recent_tweets (query_string, token, start_time, end_time) -> pd.DataFram
     user_dict = {}
     media_dict = {}
 
-# get responses from tweet call
+    # get responses from tweet call
     if response[0] != None:
         for response in hoax_tweets:
-    # get users data from tweet call
+            # get users data from tweet call
             for user in response.includes['users']:
                 user_dict[user.id] = {'username': user.username,
                               'followers': user.public_metrics['followers_count'],
@@ -142,16 +147,15 @@ def get_recent_tweets (query_string, token, start_time, end_time) -> pd.DataFram
             # get media files if exists
             try:
                 for m in response.includes['media']:
-                    media_dict[m.media_key] = {'type': m.type
-                                            }
+                    media_dict[m.media_key] = {'type': m.type}
             except KeyError:
                 pass
 
 
             for tweet in response.data:
                 author_info = user_dict[tweet.author_id]
-                #media_info = {'type': ''} if get_attachment_key(tweet['attachments']) == '' else media_dict[get_attachment_key(tweet['attachments'])]
-        # creating the dictionary from tweet and user data and media data
+                # media_info = {'type': ''} if get_attachment_key(tweet['attachments']) == '' else media_dict[get_attachment_key(tweet['attachments'])]
+                # creating the dictionary from tweet and user data and media data
                 result.append({'author_id': tweet.author_id,
                        'username': author_info['username'],
                        'author_followers': author_info['followers'],
@@ -213,10 +217,10 @@ def write_tweets_s3_mongodb() -> None:
     j = json.loads(obj['Body'].read().decode())
 
     print('mongo db part start')
-    print(j)
 
     client = MongoClient("mongodb://localhost:27017/", username= 'rootuser', password= 'rootpass')
     mylo_db = client["mylocode"]
+
     try:
         mylo_db.tweet_raw.insert_many(j)
     except Exception as e:
@@ -287,3 +291,42 @@ def save(tweets: pd.DataFrame, path: str):
     else:
         tweets.to_json(path, orient='records')
 
+
+def save_last_tweet_id(id: str):
+    """
+
+    """
+
+    now_date = datetime.now()
+
+    dictionary_tweet_id = {
+        "id": str(id),
+        "date_time": now_date
+    }
+
+    s3 = create_boto3(True)
+
+    print('Copying last tweet id to s3')
+
+    json_file = json.dumps(dictionary_tweet_id, default=str)
+
+    s3object = s3.Object('mylosh', F'tweet_id/tweet_id.json')
+    s3object.put(
+        Body=(bytes(json_file.encode('UTF-8'))), ContentType='application/json'
+    )
+
+    print('Finished last tweet id')
+
+
+def get_last_tweet_id() -> str:
+    """
+
+    """
+
+    s3 = create_boto3(False)
+
+    obj = s3.get_object(Bucket='mylosh', Key=F'tweet_id/tweet_id.json')
+    j = json.loads(obj['Body'].read().decode())
+    j_id = j['id']
+
+    return str(j_id)
