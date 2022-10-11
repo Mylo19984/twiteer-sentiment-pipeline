@@ -84,6 +84,7 @@ def get_recent_user_tweets (query_string: str, token: str, start_time: datetime,
 
         except Exception as e:
             print(F'Error ocured: {e.__class__}')
+            print(e)
             pass
 
     # refactoring
@@ -186,7 +187,7 @@ def write_tweets_s3_bucket(df: pd.DataFrame, file_name: str) -> None:
         s3 = create_boto3(True)
 
         print('Copying json data to s3')
-        save_last_tweet_id(df.iloc[0]['tweet_id'])
+        save_last_tweet_id_s3(df.iloc[0]['tweet_id'])
 
         json_file = df.to_json(orient='records')
         s3object = s3.Object('mylosh', F'tweet/{file_name}.json')
@@ -198,6 +199,7 @@ def write_tweets_s3_bucket(df: pd.DataFrame, file_name: str) -> None:
 
     except Exception as e:
         print(F'Error ocured: {e.__class__}')
+        print(e)
         print('Nothing to copy in s3')
 
 
@@ -217,7 +219,11 @@ def write_tweets_s3_mongodb() -> None:
     print(F'Num of records in data is {len(j)}')
     # hendle the error below, index out of range moze da j[0] bude prazan
 
-    if j[0]['tweet_id'] > int(get_last_tweet_id()):
+    get_last_tweet_id_mongo()
+
+    if 100>0:
+
+        # j[0]['tweet_id'] > int(get_last_tweet_id_s3())
 
         print('mongo db part start')
 
@@ -226,8 +232,12 @@ def write_tweets_s3_mongodb() -> None:
 
         try:
             mylo_db.tweet_raw.insert_many(j)
+            print('Saving insert log')
+            save_last_tweet_id_db(j[0]['tweet_id'])
+            print('Finished insert log')
         except Exception as e:
             print('Exception happened, it is', e.__class__)
+            print(e)
 
         print('mongo db part end')
 
@@ -294,11 +304,12 @@ def save(tweets: pd.DataFrame, path: str):
         tweets.to_json(path, orient='records')
     except Exception as e:
         print('Exception happened, it is', e.__class__)
+        print(e)
     else:
         tweets.to_json(path, orient='records')
 
 
-def save_last_tweet_id(id: str):
+def save_last_tweet_id_s3(id: str):
     """
 
     """
@@ -324,7 +335,7 @@ def save_last_tweet_id(id: str):
     print('Finished last tweet id')
 
 
-def get_last_tweet_id() -> str:
+def get_last_tweet_id_s3() -> str:
     """
 
     """
@@ -336,3 +347,37 @@ def get_last_tweet_id() -> str:
     j_id = j['id']
 
     return str(j_id)
+
+
+def save_last_tweet_id_db(id):
+    """
+
+    """
+
+    now_date = datetime.now()
+    dictionary_tweet_id = {
+        "id": str(id),
+        "date_time": now_date
+    }
+
+    client = MongoClient("mongodb://localhost:27017/", username='rootuser', password='rootpass')
+    mylo_db = client["mylocode"]
+
+    try:
+        mylo_db.insert_log.insert_one(dictionary_tweet_id)
+    except Exception as e:
+        print('Exception happened, it is', e.__class__)
+        print(e)
+
+
+def get_last_tweet_id_mongo():
+    """
+
+    """
+
+    client = MongoClient("mongodb://localhost:27017/", username='rootuser', password='rootpass')
+    mylo_db = client["mylocode"]
+
+    json_data = mylo_db.insert_log.find({}, {"date_time":1, "id":1}).sort("date_time",-1).limit(1)
+
+    print(json_data[0]['id'])
