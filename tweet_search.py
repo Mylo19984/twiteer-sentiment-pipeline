@@ -215,15 +215,10 @@ def write_tweets_s3_mongodb() -> None:
     obj = s3.get_object(Bucket='mylosh', Key=list_s3_obj[0])
     j = json.loads(obj['Body'].read().decode())
 
-    # getting the last tweet id in db
-    print(F'Num of records in data is {len(j)}')
-    # hendle the error below, index out of range moze da j[0] bude prazan
+    print(get_last_tweet_id_mongo())
+    print(j[0]['tweet_id'])
 
-    get_last_tweet_id_mongo()
-
-    if 100>0:
-
-        # j[0]['tweet_id'] > int(get_last_tweet_id_s3())
+    if j[0]['tweet_id']>int(get_last_tweet_id_mongo()):
 
         print('mongo db part start')
 
@@ -234,7 +229,7 @@ def write_tweets_s3_mongodb() -> None:
             mylo_db.tweet_raw.insert_many(j)
             print('Saving insert log')
             save_last_tweet_id_db(j[0]['tweet_id'])
-            print('Finished insert log')
+            print(F'Finished insert log, number of records: {len(j)}')
         except Exception as e:
             print('Exception happened, it is', e.__class__)
             print(e)
@@ -370,7 +365,7 @@ def save_last_tweet_id_db(id):
         print(e)
 
 
-def get_last_tweet_id_mongo():
+def get_last_tweet_id_mongo() -> str:
     """
 
     """
@@ -380,4 +375,4 @@ def get_last_tweet_id_mongo():
 
     json_data = mylo_db.insert_log.find({}, {"date_time":1, "id":1}).sort("date_time",-1).limit(1)
 
-    print(json_data[0]['id'])
+    return json_data[0]['id']

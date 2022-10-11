@@ -25,7 +25,7 @@ end_time = F'{end_date}T12:00:00Z'
 file_name = F'id_{query_string}_{ts}'
 # highest tweet id, from which function will pull tweets
 highest_tweet_id = get_last_tweet_id_s3() if len(get_last_tweet_id_s3()) > 0 else 1
-highest_tweet_id = 1579067179659845633
+#highest_tweet_id = 1579067179659845633
 
 df_search = get_recent_user_tweets(query_string, token, start_time, end_time, highest_tweet_id)
 save(df_search, F'data/{file_name}.json')
