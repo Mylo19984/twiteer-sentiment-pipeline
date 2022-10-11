@@ -61,8 +61,6 @@ def get_recent_user_tweets (query_string: str, token: str, start_time: datetime,
             for tweet in response.data:
                 author_info = user_dict[tweet.author_id]
                 # restructure
-                # media_info = {'type': ''} if get_attachment_key(tweet['attachments']) == '' else media_dict[get_attachment_key(tweet['attachments'])]
-                # creating the dictionary from tweet and user data and media data
                 result.append({'author_id': tweet.author_id,
                        'username': author_info['username'],
                        'author_followers': author_info['followers'],
@@ -88,7 +86,9 @@ def get_recent_user_tweets (query_string: str, token: str, start_time: datetime,
             print(F'Error ocured: {e.__class__}')
             pass
 
+    # refactoring
     #save_last_tweet_id(result[0]['tweet_id'])
+    #print(result[0]['tweet_id'])
     df = pd.DataFrame(result)
     print(F'Number of tweets: {df.shape[0]}')
 
@@ -141,21 +141,10 @@ def get_recent_tweets (query_string, token, start_time, end_time) -> pd.DataFram
                               'tweets': user.public_metrics['tweet_count'],
                               'description': user.description,
                               'location': user.location,
-                              #'imageUrl': user.profile_image_url
                              }
-
-            # get media files if exists
-            try:
-                for m in response.includes['media']:
-                    media_dict[m.media_key] = {'type': m.type}
-            except KeyError:
-                pass
-
 
             for tweet in response.data:
                 author_info = user_dict[tweet.author_id]
-                # media_info = {'type': ''} if get_attachment_key(tweet['attachments']) == '' else media_dict[get_attachment_key(tweet['attachments'])]
-                # creating the dictionary from tweet and user data and media data
                 result.append({'author_id': tweet.author_id,
                        'username': author_info['username'],
                        'author_followers': author_info['followers'],
@@ -193,19 +182,23 @@ def write_tweets_s3_bucket(df: pd.DataFrame, file_name: str) -> None:
 
     :param file_name: String in which name of the file is being kept
     """
+    try:
+        s3 = create_boto3(True)
 
-    s3 = create_boto3(True)
+        print('Copying json data to s3')
+        save_last_tweet_id(df.iloc[0]['tweet_id'])
 
-    print('Copying json data to s3')
+        json_file = df.to_json(orient='records')
+        s3object = s3.Object('mylosh', F'tweet/{file_name}.json')
+        s3object.put(
+            Body=(bytes(json_file.encode('UTF-8'))), ContentType='application/json'
+        )
 
-    json_file = df.to_json(orient='records')
+        print('Finished copying json data')
 
-    s3object = s3.Object('mylosh', F'tweet/{file_name}.json')
-    s3object.put(
-        Body=(bytes(json_file.encode('UTF-8'))), ContentType='application/json'
-    )
-
-    print('Finished copying json data')
+    except Exception as e:
+        print(F'Error ocured: {e.__class__}')
+        print('Nothing to copy in s3')
 
 
 def write_tweets_s3_mongodb() -> None:
@@ -214,27 +207,32 @@ def write_tweets_s3_mongodb() -> None:
     """
 
     s3 = create_boto3(False)
-
     data_bucket = s3.list_objects(Bucket='mylosh', Prefix='tweet/')['Contents']
-
     # getting the last modified date file on s3
-    # get_last_modified = lambda obj: int(obj['LastModified'].strftime('%s'))
-    l = [obj['Key'] for obj in sorted(data_bucket, key=lambda obj: int(obj['LastModified'].strftime('%s')), reverse=True)]
-
-    obj = s3.get_object(Bucket='mylosh', Key=l[0])
+    list_s3_obj = [obj['Key'] for obj in sorted(data_bucket, key=lambda obj: int(obj['LastModified'].strftime('%s')), reverse=True)]
+    obj = s3.get_object(Bucket='mylosh', Key=list_s3_obj[0])
     j = json.loads(obj['Body'].read().decode())
 
-    print('mongo db part start')
+    # getting the last tweet id in db
+    print(F'Num of records in data is {len(j)}')
+    # hendle the error below, index out of range moze da j[0] bude prazan
 
-    client = MongoClient("mongodb://localhost:27017/", username= 'rootuser', password= 'rootpass')
-    mylo_db = client["mylocode"]
+    if j[0]['tweet_id'] > int(get_last_tweet_id()):
 
-    try:
-        mylo_db.tweet_raw.insert_many(j)
-    except Exception as e:
-        print('Exception happened, it is', e.__class__)
+        print('mongo db part start')
 
-    print('mongo db part end')
+        client = MongoClient("mongodb://localhost:27017/", username= 'rootuser', password= 'rootpass')
+        mylo_db = client["mylocode"]
+
+        try:
+            mylo_db.tweet_raw.insert_many(j)
+        except Exception as e:
+            print('Exception happened, it is', e.__class__)
+
+        print('mongo db part end')
+
+    else:
+        print('all data is already in the db')
 
 
 def create_boto3(resource: bool) -> boto3:
