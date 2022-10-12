@@ -1,6 +1,6 @@
 # Twitter sentiment analysis
 
-Making the pipeline which will pull twitter data and do the sentiment analysis on tweets.
+Making the pipeline which will pull twitter data and do the sentiment analysis on tweets. Then it will map tweet with stock or crypto coin and send the automatic email to the user with tweet and graph of price history, thus user can check if maybe the stock/crypto is worth buying.
 
 #### The project is consisted of:
 - python connection (library tweepy) to twitter tweets
@@ -23,4 +23,6 @@ This process has the control of highest tweet_id pulled from tweepy, uploaded in
 - pyspark_transformation_func.py; all functions used for pyspark are in this file.
 
 
+### Development phase
 
+- The python code will map tweet with stock or crypto coin and send the automatic email to the user with tweet and graph of price history, thus user can check if maybe the stock/crypto is worth buying.
