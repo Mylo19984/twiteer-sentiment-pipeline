@@ -44,48 +44,52 @@ def get_recent_user_tweets (query_string: str, token: str, start_time: datetime,
 
     result = []
     user_dict = {}
-    media_dict = {}
 
-    for response in hoax_tweets:
-        # print(response.data)
-        # get users data from tweet call
-        try:
-            for user in response.includes['users']:
-                user_dict[user.id] = {'username': user.username,
-                              'followers': user.public_metrics['followers_count'],
-                              'tweets': user.public_metrics['tweet_count'],
-                              'description': user.description,
-                              'location': user.location,
-                             }
+    if hoax_tweets[0].data is not None:
 
-            for tweet in response.data:
-                author_info = user_dict[tweet.author_id]
-                # restructure
-                result.append({'author_id': tweet.author_id,
-                       'username': author_info['username'],
-                       'author_followers': author_info['followers'],
-                       'author_tweets': author_info['tweets'],
-                       #'author_image': author_info['imageUrl'],
-                       'author_description': author_info['description'],
-                       'author_location': author_info['location'],
-                       'tweet_id': tweet.id,
-                       'text': tweet.text,
-                       'created_at': tweet.created_at,
-                       'retweets': tweet.public_metrics['retweet_count'],
-                       'replies': tweet.public_metrics['reply_count'],
-                       'likes': tweet.public_metrics['like_count'],
-                       'quote_count': tweet.public_metrics['quote_count'],
-                       'referenced_tweets_list': tweet.referenced_tweets,
-                       #'referenced_tweet': get_ref_tweet(tweet.referenced_tweets),
-                       #'referenced_tweet_type': get_ref_tweet_type(tweet.referenced_tweets),
-                       'conversation_id': tweet.conversation_id,
-                       'attach_list': tweet['attachments']
-                      })
+        for response in hoax_tweets:
+            # print(response.data)
+            # get users data from tweet call
+            try:
+                for user in response.includes['users']:
+                    user_dict[user.id] = {'username': user.username,
+                                  'followers': user.public_metrics['followers_count'],
+                                  'tweets': user.public_metrics['tweet_count'],
+                                  'description': user.description,
+                                  'location': user.location,
+                                 }
 
-        except Exception as e:
-            print(F'Error ocured: {e.__class__}')
-            print(e)
-            pass
+                for tweet in response.data:
+                    author_info = user_dict[tweet.author_id]
+                    # restructure
+                    result.append({'author_id': tweet.author_id,
+                           'username': author_info['username'],
+                           'author_followers': author_info['followers'],
+                           'author_tweets': author_info['tweets'],
+                           #'author_image': author_info['imageUrl'],
+                           'author_description': author_info['description'],
+                           'author_location': author_info['location'],
+                           'tweet_id': tweet.id,
+                           'text': tweet.text,
+                           'created_at': tweet.created_at,
+                           'retweets': tweet.public_metrics['retweet_count'],
+                           'replies': tweet.public_metrics['reply_count'],
+                           'likes': tweet.public_metrics['like_count'],
+                           'quote_count': tweet.public_metrics['quote_count'],
+                           'referenced_tweets_list': tweet.referenced_tweets,
+                           #'referenced_tweet': get_ref_tweet(tweet.referenced_tweets),
+                           #'referenced_tweet_type': get_ref_tweet_type(tweet.referenced_tweets),
+                           'conversation_id': tweet.conversation_id,
+                           'attach_list': tweet['attachments']
+                          })
+
+            except Exception as e:
+                print(F'Error in tweepy pull occurred: {e.__class__}')
+                print(e)
+                pass
+
+    else:
+        print('There is no data in tweepy json file')
 
     # refactoring
     #save_last_tweet_id(result[0]['tweet_id'])
@@ -133,43 +137,42 @@ def get_recent_tweets (query_string, token, start_time, end_time) -> pd.DataFram
     media_dict = {}
 
     # get responses from tweet call
-    if response[0] != None:
-        for response in hoax_tweets:
-            # get users data from tweet call
-            for user in response.includes['users']:
-                user_dict[user.id] = {'username': user.username,
-                              'followers': user.public_metrics['followers_count'],
-                              'tweets': user.public_metrics['tweet_count'],
-                              'description': user.description,
-                              'location': user.location,
-                             }
+    for response in hoax_tweets:
+        # get users data from tweet call
+        for user in response.includes['users']:
+            user_dict[user.id] = {'username': user.username,
+                          'followers': user.public_metrics['followers_count'],
+                          'tweets': user.public_metrics['tweet_count'],
+                          'description': user.description,
+                          'location': user.location,
+                         }
 
-            for tweet in response.data:
-                author_info = user_dict[tweet.author_id]
-                result.append({'author_id': tweet.author_id,
-                       'username': author_info['username'],
-                       'author_followers': author_info['followers'],
-                       'author_tweets': author_info['tweets'],
-                       #'author_image': author_info['imageUrl'],
-                       'author_description': author_info['description'],
-                       'author_location': author_info['location'],
-                       'tweet_id': tweet.id,
-                       'text': tweet.text,
-                       'created_at': tweet.created_at,
-                       'retweets': tweet.public_metrics['retweet_count'],
-                       'replies': tweet.public_metrics['reply_count'],
-                       'likes': tweet.public_metrics['like_count'],
-                       'quote_count': tweet.public_metrics['quote_count'],
-                       'referenced_tweets_list': tweet.referenced_tweets,
-                       #'referenced_tweet': get_ref_tweet(tweet.referenced_tweets),
-                       #'referenced_tweet_type': get_ref_tweet_type(tweet.referenced_tweets),
-                       'conversation_id': tweet.conversation_id,
-                       'attach_list': tweet['attachments'],
-                       #'attach_len': len(tweet['attachments']),
-                       #'attach_key': get_attachment_key(tweet['attachments']),
-                       #'media_type': media_info['type']
-                        #get_attachment_key
-                      })
+        for tweet in response.data:
+            author_info = user_dict[tweet.author_id]
+            result.append({'author_id': tweet.author_id,
+                   'username': author_info['username'],
+                   'author_followers': author_info['followers'],
+                   'author_tweets': author_info['tweets'],
+                   #'author_image': author_info['imageUrl'],
+                   'author_description': author_info['description'],
+                   'author_location': author_info['location'],
+                   'tweet_id': tweet.id,
+                   'text': tweet.text,
+                   'created_at': tweet.created_at,
+                   'retweets': tweet.public_metrics['retweet_count'],
+                   'replies': tweet.public_metrics['reply_count'],
+                   'likes': tweet.public_metrics['like_count'],
+                   'quote_count': tweet.public_metrics['quote_count'],
+                   'referenced_tweets_list': tweet.referenced_tweets,
+                   #'referenced_tweet': get_ref_tweet(tweet.referenced_tweets),
+                   #'referenced_tweet_type': get_ref_tweet_type(tweet.referenced_tweets),
+                   'conversation_id': tweet.conversation_id,
+                   'attach_list': tweet['attachments'],
+                   #'attach_len': len(tweet['attachments']),
+                   #'attach_key': get_attachment_key(tweet['attachments']),
+                   #'media_type': media_info['type']
+                    #get_attachment_key
+                  })
 
     df = pd.DataFrame(result)
 
@@ -183,24 +186,34 @@ def write_tweets_s3_bucket(df: pd.DataFrame, file_name: str) -> None:
 
     :param file_name: String in which name of the file is being kept
     """
-    try:
-        s3 = create_boto3(True)
 
-        print('Copying json data to s3')
-        save_last_tweet_id_s3(df.iloc[0]['tweet_id'])
+    if df.shape[0] > 0:
 
-        json_file = df.to_json(orient='records')
-        s3object = s3.Object('mylosh', F'tweet/{file_name}.json')
-        s3object.put(
-            Body=(bytes(json_file.encode('UTF-8'))), ContentType='application/json'
-        )
+        try:
+            s3 = create_boto3(True)
 
-        print('Finished copying json data')
+            print('Copying json data to s3')
 
-    except Exception as e:
-        print(F'Error ocured: {e.__class__}')
-        print(e)
-        print('Nothing to copy in s3')
+            if int(get_last_tweet_id_s3()) < df.iloc[0]['tweet_id']:
+
+                save_last_tweet_id_s3(df.iloc[0]['tweet_id'])
+                json_file = df.to_json(orient='records')
+                s3object = s3.Object('mylosh', F'tweet/{file_name}.json')
+                s3object.put(
+                    Body=(bytes(json_file.encode('UTF-8'))), ContentType='application/json'
+                )
+
+                print('Finished copying json data')
+
+            else:
+                print('json files is already on s3')
+
+        except Exception as e:
+            print(F'Error in s3 saving occurred: {e.__class__}')
+            print(e)
+
+    else:
+        print('Json file is empty, nothing to insert in s3')
 
 
 def write_tweets_s3_mongodb() -> None:
@@ -215,8 +228,8 @@ def write_tweets_s3_mongodb() -> None:
     obj = s3.get_object(Bucket='mylosh', Key=list_s3_obj[0])
     j = json.loads(obj['Body'].read().decode())
 
-    print(get_last_tweet_id_mongo())
-    print(j[0]['tweet_id'])
+    print('Lastes tweet id in mongo ' + get_last_tweet_id_mongo())
+    print('Latest tweet id in json file ' + str(j[0]['tweet_id']))
 
     if j[0]['tweet_id']>int(get_last_tweet_id_mongo()):
 
@@ -231,7 +244,7 @@ def write_tweets_s3_mongodb() -> None:
             save_last_tweet_id_db(j[0]['tweet_id'])
             print(F'Finished insert log, number of records: {len(j)}')
         except Exception as e:
-            print('Exception happened, it is', e.__class__)
+            print('Exception happened in mongodb insert, it is', e.__class__)
             print(e)
 
         print('mongo db part end')
@@ -298,7 +311,7 @@ def save(tweets: pd.DataFrame, path: str):
     try:
         tweets.to_json(path, orient='records')
     except Exception as e:
-        print('Exception happened, it is', e.__class__)
+        print('Exception happened in saving file to disk, it is', e.__class__)
         print(e)
     else:
         tweets.to_json(path, orient='records')
@@ -361,7 +374,7 @@ def save_last_tweet_id_db(id):
     try:
         mylo_db.insert_log.insert_one(dictionary_tweet_id)
     except Exception as e:
-        print('Exception happened, it is', e.__class__)
+        print('Exception happened in saving last id in mongo, it is', e.__class__)
         print(e)
 
 
@@ -375,4 +388,4 @@ def get_last_tweet_id_mongo() -> str:
 
     json_data = mylo_db.insert_log.find({}, {"date_time":1, "id":1}).sort("date_time",-1).limit(1)
 
-    return json_data[0]['id']
+    return str(json_data[0]['id'])

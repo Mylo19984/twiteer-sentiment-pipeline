@@ -12,7 +12,6 @@ if time_interval == True:
     begin_date = datetime.now().date() - timedelta(days=10)
     end_date = datetime.now().date()
 
-# restructure
 # query string for twitter user id
 query_string = '44196397'
 # bearer token
