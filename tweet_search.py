@@ -221,6 +221,11 @@ def write_tweets_s3_mongodb() -> None:
 
     """
 
+    config_obj = read_config()
+    db_param = config_obj["mongoDb"]
+    db_pass = db_param['pass']
+    db_host = db_param['host']
+    db_user = db_param['user']
     s3 = create_boto3(False)
     data_bucket = s3.list_objects(Bucket='mylosh', Prefix='tweet/')['Contents']
     # getting the last modified date file on s3
@@ -235,7 +240,7 @@ def write_tweets_s3_mongodb() -> None:
 
         print('mongo db part start')
 
-        client = MongoClient("mongodb://localhost:27017/", username= 'rootuser', password= 'rootpass')
+        client = MongoClient(F"{db_host}", username=F'{db_user}', password=F'{db_pass}')
         mylo_db = client["mylocode"]
 
         try:
@@ -261,14 +266,8 @@ def create_boto3(resource: bool) -> boto3:
     :return: boto3 boject for further use of connecting to s3
     """
 
-    config_obj = configparser.ConfigParser()
-    config_obj.read('config.ini')
-    # db_param = config_obj["postgresql"]
+    config_obj = read_config()
     aws_user = config_obj["aws"]
-    # db_user = db_param['user']
-    # db_pass = db_param['password']
-    # db_host = db_param['host']
-    # db_name = db_param['db']
 
     if resource == 1:
         s3 = boto3.resource(
@@ -295,8 +294,10 @@ def read_config() -> configparser:
 
     :return: configparser object with config.ini data
     """
+
     config = configparser.ConfigParser(interpolation=None)
     config.read('config.ini')
+
     return config
 
 
@@ -367,8 +368,13 @@ def save_last_tweet_id_db(id):
         "id": str(id),
         "date_time": now_date
     }
+    config_obj = read_config()
+    db_param = config_obj["mongoDb"]
+    db_pass = db_param['pass']
+    db_host = db_param['host']
+    db_user = db_param['user']
 
-    client = MongoClient("mongodb://localhost:27017/", username='rootuser', password='rootpass')
+    client = MongoClient(F"{db_host}", username=F'{db_user}', password=F'{db_pass}')
     mylo_db = client["mylocode"]
 
     try:
@@ -383,7 +389,13 @@ def get_last_tweet_id_mongo() -> str:
 
     """
 
-    client = MongoClient("mongodb://localhost:27017/", username='rootuser', password='rootpass')
+    config_obj = read_config()
+    db_param = config_obj["mongoDb"]
+    db_pass = db_param['pass']
+    db_host = db_param['host']
+    db_user = db_param['user']
+
+    client = MongoClient(F"{db_host}", username=F'{db_user}', password=F'{db_pass}')
     mylo_db = client["mylocode"]
 
     json_data = mylo_db.insert_log.find({}, {"date_time":1, "id":1}).sort("date_time",-1).limit(1)

@@ -7,6 +7,7 @@ from pyspark.sql.functions import *
 from pymongo import MongoClient
 from pyspark_func import remove_punctuation, remove_users, remove_links, remove_hashtag
 from pyspark_func import transformation_date, create_schema, pulling_json_s3
+from tweet_search import read_config
 
 
 config_obj = configparser.ConfigParser()
@@ -71,6 +72,13 @@ def add_sentiment_columns(df):
     return df_sentiment_label
 
 
+# pulling db parameters from config file
+config_obj = read_config()
+db_param = config_obj["mongoDb"]
+db_pass = db_param['pass']
+db_host = db_param['host']
+db_user = db_param['user']
+
 # creation of connection to s3, and getting the json file
 json_file = pulling_json_s3()
 
@@ -112,7 +120,7 @@ df_final = transformation_date(df_sentiment_label)
 df3 = df_final.coalesce(1)
 
 # converting the dataframe to pandas and dict, thus inserting it into the db
-client = MongoClient("mongodb://localhost:27017/", username= 'rootuser', password= 'rootpass')
+client = MongoClient(F"{db_host}", username=F'{db_user}', password=F'{db_pass}')
 mylo_db = client["mylocode"]
 
 print('converting data to dict')
