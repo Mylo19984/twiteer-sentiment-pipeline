@@ -91,9 +91,6 @@ def get_recent_user_tweets (query_string: str, token: str, start_time: datetime,
     else:
         print('There is no data in tweepy json file')
 
-    # refactoring
-    #save_last_tweet_id(result[0]['tweet_id'])
-    #print(result[0]['tweet_id'])
     df = pd.DataFrame(result)
     print(F'Number of tweets: {df.shape[0]}')
 
