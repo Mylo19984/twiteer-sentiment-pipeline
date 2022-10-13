@@ -15,30 +15,28 @@
             <thead class="thead-dark">
                 <tr>
                     <th scope="col">ID</th>
-                    <th scope="col">Name</th>
-                    <th scope="col">Position</th>
-                    <th scope="col">Team</th>
-                    <th scope="col">Total pt</th>
-                    <th scope="col">Bonus pt</th>
-                    <th scope="col">Avg 4wk pt</th>
-                    <th scope="col">Gw-1</th>
-                    <th scope="col">Gw-2</th>
-                    <th scope="col">Gw-3</th>
+                    <th scope="col">Username</th>
+                    <th scope="col">Text</th>
+                    <th scope="col">Created at date</th>
+                    <th scope="col">Retweets</th>
+                    <th scope="col">Replies</th>
+                    <th scope="col">Likes</th>
+                    <th scope="col">Sentiment label</th>
+                    <th scope="col">Sentiment score</th>
                 </tr>
             </thead>
             <tbody>
-                {% for entry in fpl_data_main_table %}
+                {% for entry in main_table %}
                         <tr>
                             <th scope="row">{{loop.index}}</th>
-                            <td>{{ entry.ply_name }}</td>
-                            <td>{{ entry.position }}</td>
-                            <td>{{ entry.team_name }}</td>
-                            <td>{{ entry.total_points }}</td>
-                            <td>{{ entry.bonus_points }}</td>
-                            <td>{{ entry.avg_4_weeks }}</td>
-                            <td>{{ entry.gwminus1 }}</td>
-                            <td>{{ entry.gwminus2 }}</td>
-                            <td>{{ entry.gwminus3 }}</td>
+                            <td>{{ entry.username }}</td>
+                            <td>{{ entry.cleaned_tweet_text }}</td>
+                            <td>{{ entry.created_at_date }}</td>
+                            <td>{{ entry.retweets }}</td>
+                            <td>{{ entry.replies }}</td>
+                            <td>{{ entry.likes }}</td>
+                            <td>{{ entry.berta_sent_analysis_label }}</td>
+                            <td>{{ entry.berta_sent_analysis_score }}</td>
                         </tr>
                 {% endfor %}
         </tbody>
@@ -49,19 +47,28 @@
 <script>
     const ctx = document.getElementById('fpl_data').getContext('2d');
 
-    let fpl_data = {{ fpl_data | safe }}
-    let fpl_data_name = {{ fpl_data_name | safe }}
+    let tweet_data = {{ tweet_data | safe }}
+    let tweet_data_name = {{ tweet_data_name | safe }}
+    let tweet_count = {{ tweet_count_graph | safe }}
 
     let fpl_top_ply_chart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: fpl_data_name,
+            labels: tweet_data_name,
             datasets: [{
-                label: 'Sentiment Score',
-                data: fpl_data,
+                label: 'Avg Sentiment Score',
+                data: tweet_data,
                 backgroundColor: 'rgba(153, 102, 255, 0.2)',
                 borderWidth: 1
-            }]
+            },
+           {
+                label: 'No. of Tweets',
+                data: tweet_count,
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderWidth: 1
+            }
+
+            ]
         },
         options: {
         scales: {
