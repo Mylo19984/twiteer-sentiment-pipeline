@@ -118,20 +118,8 @@ def create_schema():
 
     return schema_tweet
 
+
 def pulling_json_s3_for_spark():
-    """ Pulls the json object from s3, and returns it as json file
-
-    :return: json file needed for upload to pyspark dataframe
-    """
-
-    s3 = create_boto3(False)
-    obj = s3.get_object(Bucket='mylosh', Key=F'tweet/elon.json')
-    json_file = json.loads(obj['Body'].read().decode())
-
-    return json_file
-
-# dont use the function below
-def pulling_json_s3_for_spark_v3():
     """ Pulls the json object from s3, and returns it as json file
 
     :return: json file needed for upload to pyspark dataframe

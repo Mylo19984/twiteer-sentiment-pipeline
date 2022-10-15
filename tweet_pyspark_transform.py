@@ -4,7 +4,7 @@ from pyspark.sql.functions import *
 from pyspark.sql.types import StructField, FloatType, LongType
 from pymongo import MongoClient
 from pyspark_func import remove_punctuation, remove_users, remove_links, remove_hashtag
-from pyspark_func import transformation_date, create_schema, pulling_json_s3_for_spark_v3
+from pyspark_func import transformation_date, create_schema, pulling_json_s3_for_spark
 from tweet_search import read_config
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from transformers import pipeline
@@ -80,7 +80,7 @@ db_host = db_param['host']
 db_user = db_param['user']
 
 # creation of connection to s3, and getting the json file
-json_list, no_of_items = pulling_json_s3_for_spark_v3()
+json_list, no_of_items = pulling_json_s3_for_spark()
 
 # inserting json file into the spark dataframe
 spark = (SparkSession
