@@ -1,13 +1,13 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructField, FloatType, LongType
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from transformers import pipeline
 import configparser
 from pyspark.sql.functions import *
+from pyspark.sql.types import StructField, FloatType, LongType
 from pymongo import MongoClient
 from pyspark_func import remove_punctuation, remove_users, remove_links, remove_hashtag
-from pyspark_func import transformation_date, create_schema, pulling_json_s3
+from pyspark_func import transformation_date, create_schema, pulling_json_s3_for_spark_v3
 from tweet_search import read_config
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import pipeline
 
 
 config_obj = configparser.ConfigParser()
@@ -80,7 +80,7 @@ db_host = db_param['host']
 db_user = db_param['user']
 
 # creation of connection to s3, and getting the json file
-json_file = pulling_json_s3()
+json_list, no_of_items = pulling_json_s3_for_spark_v3()
 
 # inserting json file into the spark dataframe
 spark = (SparkSession
@@ -92,7 +92,12 @@ spark = (SparkSession
 
 schema_tweet = create_schema()
 
-df = spark.createDataFrame(json_file, schema=schema_tweet)
+emp_RDD = spark.sparkContext.emptyRDD()
+df_all_json = spark.createDataFrame(data = emp_RDD, schema = schema_tweet)
+
+for i in range(0, no_of_items):
+    df_json = spark.createDataFrame(json_list[i], schema=schema_tweet)
+    df_all_json = df_all_json.union(df_json)
 
 # cleaning the tweet text with udf functions
 remove_links = udf(remove_links, StringType())
@@ -100,7 +105,8 @@ remove_punctuation = udf(remove_punctuation, StringType())
 remove_users = udf(remove_users, StringType())
 remove_hashtag = udf(remove_hashtag, StringType())
 
-df_clean_text = clean_tweet_text(df)
+
+df_clean_text = clean_tweet_text(df_all_json)
 
 # creating the sentiment analysis columns with hugging face
 model_name_berta = 'cardiffnlp/twitter-roberta-base-sentiment-latest'

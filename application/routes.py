@@ -10,7 +10,7 @@ def dashboard():
     base = datetime.datetime.today()
     date_list = [base - datetime.timedelta(days=x) for x in range(5)]
 
-    pipeline = [{ "$match" : { "dayofmonth" : { "$in": [10, 9, 8, 7, 6, 5, 4, 3] } }
+    pipeline = [{ "$match" : { "dayofmonth" : { "$in": [15, 14, 13, 12, 11, 10, 9] } }
                  }, {"$group": {"_id": "$dayofmonth", "Total count": {"$count": {}}, "Avg sentiment": {"$avg": "$berta_sent_analysis_score"}}
                  }, { "$sort" : {"_id": 1}}]
     result_m = tweet.aggregate(pipeline)

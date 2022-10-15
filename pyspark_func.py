@@ -3,8 +3,9 @@ from pyspark.sql.types import IntegerType, TimestampType
 from pyspark.sql.functions import *
 from pyspark.sql import functions as f
 import re
-from tweet_search import create_boto3
+from tweet_search import create_boto3, read_config
 import json
+from pyspark.sql import SparkSession
 
 
 def transformation_date(df):
@@ -117,7 +118,7 @@ def create_schema():
 
     return schema_tweet
 
-def pulling_json_s3():
+def pulling_json_s3_for_spark():
     """ Pulls the json object from s3, and returns it as json file
 
     :return: json file needed for upload to pyspark dataframe
@@ -128,6 +129,61 @@ def pulling_json_s3():
     json_file = json.loads(obj['Body'].read().decode())
 
     return json_file
+
+# dont use the function below
+def pulling_json_s3_for_spark_v3():
+    """ Pulls the json object from s3, and returns it as json file
+
+    :return: json file needed for upload to pyspark dataframe
+    """
+
+    s3 = create_boto3(True)
+    bucket = s3.Bucket('mylosh')
+
+    no_of_files = 0
+    final_list = []
+
+    for obj in bucket.objects.filter(Prefix='tweet/'):
+
+        if obj.get()['ContentLength'] > 0:
+            body = json.load(obj.get()['Body'])
+            final_list.append(body)
+            no_of_files += 1
+
+    return final_list, no_of_files
+
+
+def pulling_json_s3_for_spark_v5():
+    """ Pulls the json object from s3, and returns it as json file
+
+    :return: json file needed for upload to pyspark dataframe
+    """
+
+    spark = (SparkSession
+             .builder
+             .appName('mylo')
+             .master('local')
+             .config("spark.driver.memory", "2g")
+             .getOrCreate())
+
+    config_obj = read_config()
+    aws_user = config_obj["aws"]
+
+    spark._jsc.hadoopConfiguration().set("fs.s3a.access.key", aws_user['acc_key'])
+    spark._jsc.hadoopConfiguration().set("fs.s3a.secret.key", aws_user['secret_acc_key'])
+    spark._jsc.hadoopConfiguration().set("fs.s3a.endpoint", "s3.amazonaws.com")
+
+    schema_tweet = create_schema()
+
+    df = spark.read.json("s3://mylosh/tweet/id_44196397_1665511144.828783.json")
+    #data/id_44196397_1665511144.828783.json
+
+        # spark.createDataFrame(json_file, schema=schema_tweet)
+
+    print(df.head())
+
+    return df
+
 
 
 
