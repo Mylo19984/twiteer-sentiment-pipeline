@@ -80,7 +80,8 @@ db_host = db_param['host']
 db_user = db_param['user']
 
 # creation of connection to s3, and getting the json file
-json_list, no_of_items = pulling_json_s3_for_spark()
+json_list, no_of_items, modified_date_marker = pulling_json_s3_for_spark()
+print(modified_date_marker)
 
 # inserting json file into the spark dataframe
 spark = (SparkSession
@@ -93,7 +94,7 @@ spark = (SparkSession
 schema_tweet = create_schema()
 
 emp_RDD = spark.sparkContext.emptyRDD()
-df_all_json = spark.createDataFrame(data = emp_RDD, schema = schema_tweet)
+df_all_json = spark.createDataFrame(data=emp_RDD, schema=schema_tweet)
 
 for i in range(0, no_of_items):
     df_json = spark.createDataFrame(json_list[i], schema=schema_tweet)
@@ -122,7 +123,7 @@ df_sentiment_label = add_sentiment_columns(df_clean_text)
 # creating dates columns
 df_final = transformation_date(df_sentiment_label)
 
-# the coalasce is set up becauese of my memory limits on mac mini computer. This part of code is note necessary
+# coalesce is set up because of my memory limits on mac mini computer. This part of code is note necessary
 df3 = df_final.coalesce(1)
 
 # converting the dataframe to pandas and dict, thus inserting it into the db
@@ -135,5 +136,5 @@ print('converting data to dict finished')
 
 print('insert db')
 mylo_db.tweet.insert_many(df_insert_db)
-print('finished insert db')
+print(F'finished insert db, total number {len(df_insert_db)}')
 

@@ -6,6 +6,7 @@ import re
 from tweet_search import create_boto3, read_config
 import json
 from pyspark.sql import SparkSession
+import datetime
 
 
 def transformation_date(df):
@@ -123,6 +124,8 @@ def pulling_json_s3_for_spark():
     """ Pulls the json object from s3, and returns it as json file
 
     :return: json file needed for upload to pyspark dataframe
+    :return: number of files needed to be inserted in mongoDb
+    :return: highest modified date of filtered files
     """
 
     s3 = create_boto3(True)
@@ -130,6 +133,7 @@ def pulling_json_s3_for_spark():
 
     no_of_files = 0
     final_list = []
+    last_modified_date = 0
 
     for obj in bucket.objects.filter(Prefix='tweet/'):
 
@@ -138,7 +142,12 @@ def pulling_json_s3_for_spark():
             final_list.append(body)
             no_of_files += 1
 
-    return final_list, no_of_files
+        if last_modified_date < int(obj.get()['LastModified'].strftime('%s')):
+            last_modified_date = int(obj.get()['LastModified'].strftime('%s'))
+
+    modified_date_marker = datetime.datetime.fromtimestamp(last_modified_date, tz = None)
+
+    return final_list, no_of_files, modified_date_marker
 
 
 def pulling_json_s3_for_spark_v5():

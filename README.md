@@ -75,7 +75,7 @@ year - tweets year
 month - tweets month
 dayofmonth - tweets dayofmonth
 
-### Web site look
+### Website look
 
 <img src="/images/main-page.png" alt="photo of main page view" title="Twitter Sentiment Analysis">
 
