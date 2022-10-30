@@ -3,10 +3,11 @@ from pyspark.sql.types import IntegerType, TimestampType
 from pyspark.sql.functions import *
 from pyspark.sql import functions as f
 import re
-from tweet_search import create_boto3, read_config
+from tweet_search import create_boto3, read_config, get_last_tweet_id_mongo
 import json
 from pyspark.sql import SparkSession
-import datetime
+from datetime import datetime
+from pymongo import MongoClient
 
 
 def transformation_date(df):
@@ -128,24 +129,28 @@ def pulling_json_s3_for_spark():
     :return: highest modified date of filtered files
     """
 
+    table_name = 'insert_processed_log'
+    last_modified_date = get_last_tweet_id_mongo(table_name)
+    last_modified_date_int = datetime.timestamp(datetime.strptime(last_modified_date, "%Y-%m-%d %H:%M:%S"))
     s3 = create_boto3(True)
     bucket = s3.Bucket('mylosh')
 
     no_of_files = 0
     final_list = []
-    last_modified_date = 0
+    #last_modified_date = 0
+    table_name = 'insert_processed_log'
 
     for obj in bucket.objects.filter(Prefix='tweet/'):
 
-        if obj.get()['ContentLength'] > 0:
+        if (obj.get()['ContentLength'] > 0) and (int(obj.get()['LastModified'].strftime('%s')) > last_modified_date_int):
+            print(last_modified_date_int)
+            print(obj.last_modified.replace(tzinfo = None))
             body = json.load(obj.get()['Body'])
             final_list.append(body)
             no_of_files += 1
+            last_modified_date_int = int(obj.get()['LastModified'].strftime('%s'))
 
-        if last_modified_date < int(obj.get()['LastModified'].strftime('%s')):
-            last_modified_date = int(obj.get()['LastModified'].strftime('%s'))
-
-    modified_date_marker = datetime.datetime.fromtimestamp(last_modified_date, tz = None)
+    modified_date_marker = datetime.fromtimestamp(last_modified_date_int, tz = None)
 
     return final_list, no_of_files, modified_date_marker
 
@@ -181,6 +186,31 @@ def pulling_json_s3_for_spark_v5():
 
     return df
 
+
+def save_last_tweet_id_db(file_modified_date):
+    """
+
+    """
+
+    now_date = datetime.now()
+    dictionary_db_logger = {
+        "file_modified_date": file_modified_date,
+        "date_time": now_date
+    }
+    config_obj = read_config()
+    db_param = config_obj["mongoDb"]
+    db_pass = db_param['pass']
+    db_host = db_param['host']
+    db_user = db_param['user']
+
+    client = MongoClient(F"{db_host}", username=F'{db_user}', password=F'{db_pass}')
+    mylo_db = client["mylocode"]
+
+    try:
+        mylo_db.insert_processed_log.insert_one(dictionary_db_logger)
+    except Exception as e:
+        print('Exception happened in saving last id in mongo, it is', e.__class__)
+        print(e)
 
 
 

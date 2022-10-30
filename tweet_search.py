@@ -8,7 +8,8 @@ from pymongo import MongoClient
 from datetime import datetime
 
 
-def get_recent_user_tweets (query_string: str, token: str, start_time: datetime, end_time: datetime, since_id: str) -> pd.DataFrame:
+def get_recent_user_tweets(query_string: str, token: str, start_time: datetime, end_time: datetime,
+                           since_id: str) -> pd.DataFrame:
     """ Pulls tweets from the specific user from twitter
 
     :param query_string: string of twitter user id, for whom tweets are being pulled
@@ -29,16 +30,15 @@ def get_recent_user_tweets (query_string: str, token: str, start_time: datetime,
     client = tweepy.Client(bearer_token=token)
 
     for response in tweepy.Paginator(client.get_users_tweets,
-                                 id = query_string,
-                                 user_fields = ['username', 'public_metrics', 'description', 'location'],
-                                 tweet_fields = ['created_at', 'geo', 'public_metrics', 'text', 'conversation_id'],
-                                 media_fields = ['media_key', 'type'],
-                                 expansions = ['author_id', 'referenced_tweets.id', 'attachments.media_keys'],
-                                 start_time = start_time,
-                                 end_time = end_time,
-                                 since_id = since_id,
-                                 max_results=100):
-
+                                     id=query_string,
+                                     user_fields=['username', 'public_metrics', 'description', 'location'],
+                                     tweet_fields=['created_at', 'geo', 'public_metrics', 'text', 'conversation_id'],
+                                     media_fields=['media_key', 'type'],
+                                     expansions=['author_id', 'referenced_tweets.id', 'attachments.media_keys'],
+                                     start_time=start_time,
+                                     end_time=end_time,
+                                     since_id=since_id,
+                                     max_results=100):
         time.sleep(0.5)
         hoax_tweets.append(response)
 
@@ -53,35 +53,35 @@ def get_recent_user_tweets (query_string: str, token: str, start_time: datetime,
             try:
                 for user in response.includes['users']:
                     user_dict[user.id] = {'username': user.username,
-                                  'followers': user.public_metrics['followers_count'],
-                                  'tweets': user.public_metrics['tweet_count'],
-                                  'description': user.description,
-                                  'location': user.location,
-                                 }
+                                          'followers': user.public_metrics['followers_count'],
+                                          'tweets': user.public_metrics['tweet_count'],
+                                          'description': user.description,
+                                          'location': user.location,
+                                          }
 
                 for tweet in response.data:
                     author_info = user_dict[tweet.author_id]
                     # restructure
                     result.append({'author_id': tweet.author_id,
-                           'username': author_info['username'],
-                           'author_followers': author_info['followers'],
-                           'author_tweets': author_info['tweets'],
-                           #'author_image': author_info['imageUrl'],
-                           'author_description': author_info['description'],
-                           'author_location': author_info['location'],
-                           'tweet_id': tweet.id,
-                           'text': tweet.text,
-                           'created_at': tweet.created_at,
-                           'retweets': tweet.public_metrics['retweet_count'],
-                           'replies': tweet.public_metrics['reply_count'],
-                           'likes': tweet.public_metrics['like_count'],
-                           'quote_count': tweet.public_metrics['quote_count'],
-                           'referenced_tweets_list': tweet.referenced_tweets,
-                           #'referenced_tweet': get_ref_tweet(tweet.referenced_tweets),
-                           #'referenced_tweet_type': get_ref_tweet_type(tweet.referenced_tweets),
-                           'conversation_id': tweet.conversation_id,
-                           'attach_list': tweet['attachments']
-                          })
+                                   'username': author_info['username'],
+                                   'author_followers': author_info['followers'],
+                                   'author_tweets': author_info['tweets'],
+                                   # 'author_image': author_info['imageUrl'],
+                                   'author_description': author_info['description'],
+                                   'author_location': author_info['location'],
+                                   'tweet_id': tweet.id,
+                                   'text': tweet.text,
+                                   'created_at': tweet.created_at,
+                                   'retweets': tweet.public_metrics['retweet_count'],
+                                   'replies': tweet.public_metrics['reply_count'],
+                                   'likes': tweet.public_metrics['like_count'],
+                                   'quote_count': tweet.public_metrics['quote_count'],
+                                   'referenced_tweets_list': tweet.referenced_tweets,
+                                   # 'referenced_tweet': get_ref_tweet(tweet.referenced_tweets),
+                                   # 'referenced_tweet_type': get_ref_tweet_type(tweet.referenced_tweets),
+                                   'conversation_id': tweet.conversation_id,
+                                   'attach_list': tweet['attachments']
+                                   })
 
             except Exception as e:
                 print(F'Error in tweepy pull occurred: {e.__class__}')
@@ -97,7 +97,7 @@ def get_recent_user_tweets (query_string: str, token: str, start_time: datetime,
     return df
 
 
-def get_recent_tweets (query_string, token, start_time, end_time) -> pd.DataFrame:
+def get_recent_tweets(query_string, token, start_time, end_time) -> pd.DataFrame:
     """ Pulls tweets from the specific hashtag from twitter
 
     :param query_string: string of twitter hashtag, for whom tweets are being pulled
@@ -116,16 +116,14 @@ def get_recent_tweets (query_string, token, start_time, end_time) -> pd.DataFram
     client = tweepy.Client(bearer_token=token)
 
     for response in tweepy.Paginator(client.search_recent_tweets,
-                                 query = query_string,
-                                 user_fields = ['username', 'public_metrics', 'description', 'location'],
-                                 tweet_fields = ['created_at', 'geo', 'public_metrics', 'text', 'conversation_id'],
-                                 media_fields = ['media_key', 'type'],
-                                 expansions = ['author_id', 'referenced_tweets.id', 'attachments.media_keys'],
-                                 start_time = start_time,
-                                 end_time = end_time,
-                             max_results=100):
-
-
+                                     query=query_string,
+                                     user_fields=['username', 'public_metrics', 'description', 'location'],
+                                     tweet_fields=['created_at', 'geo', 'public_metrics', 'text', 'conversation_id'],
+                                     media_fields=['media_key', 'type'],
+                                     expansions=['author_id', 'referenced_tweets.id', 'attachments.media_keys'],
+                                     start_time=start_time,
+                                     end_time=end_time,
+                                     max_results=100):
         time.sleep(1)
         hoax_tweets.append(response)
 
@@ -138,38 +136,38 @@ def get_recent_tweets (query_string, token, start_time, end_time) -> pd.DataFram
         # get users data from tweet call
         for user in response.includes['users']:
             user_dict[user.id] = {'username': user.username,
-                          'followers': user.public_metrics['followers_count'],
-                          'tweets': user.public_metrics['tweet_count'],
-                          'description': user.description,
-                          'location': user.location,
-                         }
+                                  'followers': user.public_metrics['followers_count'],
+                                  'tweets': user.public_metrics['tweet_count'],
+                                  'description': user.description,
+                                  'location': user.location,
+                                  }
 
         for tweet in response.data:
             author_info = user_dict[tweet.author_id]
             result.append({'author_id': tweet.author_id,
-                   'username': author_info['username'],
-                   'author_followers': author_info['followers'],
-                   'author_tweets': author_info['tweets'],
-                   #'author_image': author_info['imageUrl'],
-                   'author_description': author_info['description'],
-                   'author_location': author_info['location'],
-                   'tweet_id': tweet.id,
-                   'text': tweet.text,
-                   'created_at': tweet.created_at,
-                   'retweets': tweet.public_metrics['retweet_count'],
-                   'replies': tweet.public_metrics['reply_count'],
-                   'likes': tweet.public_metrics['like_count'],
-                   'quote_count': tweet.public_metrics['quote_count'],
-                   'referenced_tweets_list': tweet.referenced_tweets,
-                   #'referenced_tweet': get_ref_tweet(tweet.referenced_tweets),
-                   #'referenced_tweet_type': get_ref_tweet_type(tweet.referenced_tweets),
-                   'conversation_id': tweet.conversation_id,
-                   'attach_list': tweet['attachments'],
-                   #'attach_len': len(tweet['attachments']),
-                   #'attach_key': get_attachment_key(tweet['attachments']),
-                   #'media_type': media_info['type']
-                    #get_attachment_key
-                  })
+                           'username': author_info['username'],
+                           'author_followers': author_info['followers'],
+                           'author_tweets': author_info['tweets'],
+                           # 'author_image': author_info['imageUrl'],
+                           'author_description': author_info['description'],
+                           'author_location': author_info['location'],
+                           'tweet_id': tweet.id,
+                           'text': tweet.text,
+                           'created_at': tweet.created_at,
+                           'retweets': tweet.public_metrics['retweet_count'],
+                           'replies': tweet.public_metrics['reply_count'],
+                           'likes': tweet.public_metrics['like_count'],
+                           'quote_count': tweet.public_metrics['quote_count'],
+                           'referenced_tweets_list': tweet.referenced_tweets,
+                           # 'referenced_tweet': get_ref_tweet(tweet.referenced_tweets),
+                           # 'referenced_tweet_type': get_ref_tweet_type(tweet.referenced_tweets),
+                           'conversation_id': tweet.conversation_id,
+                           'attach_list': tweet['attachments'],
+                           # 'attach_len': len(tweet['attachments']),
+                           # 'attach_key': get_attachment_key(tweet['attachments']),
+                           # 'media_type': media_info['type']
+                           # get_attachment_key
+                           })
 
     df = pd.DataFrame(result)
 
@@ -218,6 +216,7 @@ def write_tweets_s3_mongodb() -> None:
 
     """
 
+    table_name = 'insert_log'
     config_obj = read_config()
     db_param = config_obj["mongoDb"]
     db_pass = db_param['pass']
@@ -226,14 +225,15 @@ def write_tweets_s3_mongodb() -> None:
     s3 = create_boto3(False)
     data_bucket = s3.list_objects(Bucket='mylosh', Prefix='tweet/')['Contents']
     # getting the last modified date file on s3
-    list_s3_obj = [obj['Key'] for obj in sorted(data_bucket, key=lambda obj: int(obj['LastModified'].strftime('%s')), reverse=True)]
+    list_s3_obj = [obj['Key'] for obj in
+                   sorted(data_bucket, key=lambda obj: int(obj['LastModified'].strftime('%s')), reverse=True)]
     obj = s3.get_object(Bucket='mylosh', Key=list_s3_obj[0])
     j = json.loads(obj['Body'].read().decode())
 
-    print('Lastes tweet id in mongo ' + get_last_tweet_id_mongo())
+    print('Lastes tweet id in mongo ' + get_last_tweet_id_mongo(table_name))
     print('Latest tweet id in json file ' + str(j[0]['tweet_id']))
 
-    if j[0]['tweet_id']>int(get_last_tweet_id_mongo()):
+    if j[0]['tweet_id'] > int(get_last_tweet_id_mongo(table_name)):
 
         print('mongo db part start')
 
@@ -282,6 +282,7 @@ def create_boto3(resource: bool) -> boto3:
         )
 
     return s3
+
 
 # other functions
 
@@ -381,11 +382,12 @@ def save_last_tweet_id_db(id):
         print(e)
 
 
-def get_last_tweet_id_mongo() -> str:
+def get_last_tweet_id_mongo(table_name: str) -> str:
     """
 
     """
 
+    str_data = '0'
     config_obj = read_config()
     db_param = config_obj["mongoDb"]
     db_pass = db_param['pass']
@@ -395,6 +397,12 @@ def get_last_tweet_id_mongo() -> str:
     client = MongoClient(F"{db_host}", username=F'{db_user}', password=F'{db_pass}')
     mylo_db = client["mylocode"]
 
-    json_data = mylo_db.insert_log.find({}, {"date_time":1, "id":1}).sort("date_time",-1).limit(1)
+    if table_name == 'insert_log':
+        json_data = mylo_db.insert_log.find({}, {"date_time": 1, "id": 1}).sort("date_time", -1).limit(1)
+        str_data = str(json_data[0]['id'])
+    elif table_name == 'insert_processed_log':
+        json_data = mylo_db.insert_processed_log.find({}, {"date_time": 1, "file_modified_date": 1}).sort("date_time",
+                                                                                                          -1).limit(1)
+        str_data = str(json_data[0]['file_modified_date'])
 
-    return str(json_data[0]['id'])
+    return str_data

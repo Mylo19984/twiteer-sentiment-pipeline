@@ -3,7 +3,7 @@ import configparser
 from pyspark.sql.functions import *
 from pyspark.sql.types import StructField, FloatType, LongType
 from pymongo import MongoClient
-from pyspark_func import remove_punctuation, remove_users, remove_links, remove_hashtag
+from pyspark_func import remove_punctuation, remove_users, remove_links, remove_hashtag, save_last_tweet_id_db
 from pyspark_func import transformation_date, create_schema, pulling_json_s3_for_spark
 from tweet_search import read_config
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -81,7 +81,6 @@ db_user = db_param['user']
 
 # creation of connection to s3, and getting the json file
 json_list, no_of_items, modified_date_marker = pulling_json_s3_for_spark()
-print(modified_date_marker)
 
 # inserting json file into the spark dataframe
 spark = (SparkSession
@@ -135,6 +134,13 @@ df_insert_db = df3.toPandas().to_dict(orient='records')
 print('converting data to dict finished')
 
 print('insert db')
-mylo_db.tweet.insert_many(df_insert_db)
+try:
+    mylo_db.tweet.insert_many(df_insert_db)
+    # insert modified date of last s3 file;
+    save_last_tweet_id_db(modified_date_marker)
+except Exception as e:
+    print('Exception happened in inserting final data to mongoDb, it is', e.__class__)
+    print(e)
+
 print(F'finished insert db, total number {len(df_insert_db)}')
 
