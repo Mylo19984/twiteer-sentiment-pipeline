@@ -188,10 +188,13 @@ def write_tweets_s3_bucket(df: pd.DataFrame, file_name: str) -> None:
             s3 = create_boto3(True)
 
             print('Copying json data to s3')
+            last_tweet_id, author_id = get_last_tweet_data_s3()
+            print(last_tweet_id)
+            print(author_id)
 
-            if int(get_last_tweet_id_s3()) < df.iloc[0]['tweet_id']:
+            if int(glast_tweet_id) < df.iloc[0]['tweet_id'] and int(author_id) == df.iloc[0]['author_id']:
 
-                save_last_tweet_id_s3(df.iloc[0]['tweet_id'])
+                save_last_tweet_data_s3(df.iloc[0]['tweet_id'], df.iloc[0]['author_id'])
                 json_file = df.to_json(orient='records')
                 s3object = s3.Object('mylosh', F'tweet/{file_name}.json')
                 s3object.put(
@@ -316,7 +319,7 @@ def save(tweets: pd.DataFrame, path: str):
         tweets.to_json(path, orient='records')
 
 
-def save_last_tweet_id_s3(id: str):
+def save_last_tweet_data_s3(id: str, author_id: str):
     """
 
     """
@@ -325,6 +328,7 @@ def save_last_tweet_id_s3(id: str):
 
     dictionary_tweet_id = {
         "id": str(id),
+        "author_id": str(author_id),
         "date_time": now_date
     }
 
@@ -342,7 +346,7 @@ def save_last_tweet_id_s3(id: str):
     print('Finished last tweet id')
 
 
-def get_last_tweet_id_s3() -> str:
+def get_last_tweet_data_s3():
     """
 
     """
@@ -351,9 +355,15 @@ def get_last_tweet_id_s3() -> str:
 
     obj = s3.get_object(Bucket='mylosh', Key=F'tweet_id/tweet_id.json')
     j = json.loads(obj['Body'].read().decode())
-    j_id = j['id']
+    j_id = str(j['id'])
 
-    return str(j_id)
+    try:
+        j_author_id = str(j['author_id'])
+    except Exception as e:
+        print('Exception', e.__class__)
+        j_author_id = ""
+
+    return j_id, j_author_id
 
 
 def save_last_tweet_id_db(id):

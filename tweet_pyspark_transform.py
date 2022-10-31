@@ -96,6 +96,8 @@ emp_RDD = spark.sparkContext.emptyRDD()
 df_all_json = spark.createDataFrame(data=emp_RDD, schema=schema_tweet)
 
 for i in range(0, no_of_items):
+    print(json_list[i])
+    print(no_of_items)
     df_json = spark.createDataFrame(json_list[i], schema=schema_tweet)
     df_all_json = df_all_json.union(df_json)
 

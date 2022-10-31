@@ -1,4 +1,4 @@
-from tweet_search import read_config, get_last_tweet_id_s3, get_recent_user_tweets, save
+from tweet_search import read_config, get_last_tweet_data_s3, get_recent_user_tweets, save
 from tweet_search import write_tweets_s3_bucket, write_tweets_s3_mongodb
 from datetime import datetime, timedelta
 
@@ -23,7 +23,8 @@ end_time = F'{end_date}T12:00:00Z'
 # file name
 file_name = F'id_{query_string}_{ts}'
 # highest tweet id, from which function will pull tweets
-highest_tweet_id = get_last_tweet_id_s3() if len(get_last_tweet_id_s3()) > 0 else 1
+last_tweet_id, author_id = get_last_tweet_data_s3()
+highest_tweet_id = last_tweet_id if len(last_tweet_id) > 0 else 1
 #highest_tweet_id = 1579067179659845633
 
 df_search = get_recent_user_tweets(query_string, token, start_time, end_time, highest_tweet_id)
