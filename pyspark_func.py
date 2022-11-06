@@ -187,7 +187,7 @@ def pulling_json_s3_for_spark_v5():
     return df
 
 
-def save_last_tweet_id_db(file_modified_date):
+def save_last_tweet_id_db(file_modified_date, author_id):
     """
 
     """
@@ -195,6 +195,7 @@ def save_last_tweet_id_db(file_modified_date):
     now_date = datetime.now()
     dictionary_db_logger = {
         "file_modified_date": file_modified_date,
+        "author_id": author_id,
         "date_time": now_date
     }
     config_obj = read_config()

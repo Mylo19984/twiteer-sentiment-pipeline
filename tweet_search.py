@@ -192,7 +192,7 @@ def write_tweets_s3_bucket(df: pd.DataFrame, file_name: str) -> None:
             print(last_tweet_id)
             print(author_id)
 
-            if int(glast_tweet_id) < df.iloc[0]['tweet_id'] and int(author_id) == df.iloc[0]['author_id']:
+            if int(last_tweet_id) < df.iloc[0]['tweet_id'] and int(author_id) == df.iloc[0]['author_id']:
 
                 save_last_tweet_data_s3(df.iloc[0]['tweet_id'], df.iloc[0]['author_id'])
                 json_file = df.to_json(orient='records')
@@ -233,10 +233,12 @@ def write_tweets_s3_mongodb() -> None:
     obj = s3.get_object(Bucket='mylosh', Key=list_s3_obj[0])
     j = json.loads(obj['Body'].read().decode())
 
-    print('Lastes tweet id in mongo ' + get_last_tweet_id_mongo(table_name))
+    tweet_id_data, auth_id_data = get_last_tweet_id_mongo(table_name)
+
+    print('Lastes tweet id in mongo ' + tweet_id_data)
     print('Latest tweet id in json file ' + str(j[0]['tweet_id']))
 
-    if j[0]['tweet_id'] > int(get_last_tweet_id_mongo(table_name)):
+    if j[0]['tweet_id'] > int(tweet_id_data):
 
         print('mongo db part start')
 
@@ -246,7 +248,7 @@ def write_tweets_s3_mongodb() -> None:
         try:
             mylo_db.tweet_raw.insert_many(j)
             print('Saving insert log')
-            save_last_tweet_id_db(j[0]['tweet_id'])
+            save_last_tweet_id_db(j[0]['tweet_id'], j[0]['author_id'])
             print(F'Finished insert log, number of records: {len(j)}')
         except Exception as e:
             print('Exception happened in mongodb insert, it is', e.__class__)
@@ -363,10 +365,11 @@ def get_last_tweet_data_s3():
         print('Exception', e.__class__)
         j_author_id = ""
 
+    # place to return the whole object or similar
     return j_id, j_author_id
 
 
-def save_last_tweet_id_db(id):
+def save_last_tweet_id_db(id, author_id):
     """
 
     """
@@ -374,6 +377,7 @@ def save_last_tweet_id_db(id):
     now_date = datetime.now()
     dictionary_tweet_id = {
         "id": str(id),
+        "author_id": str(author_id),
         "date_time": now_date
     }
     config_obj = read_config()
@@ -408,11 +412,13 @@ def get_last_tweet_id_mongo(table_name: str) -> str:
     mylo_db = client["mylocode"]
 
     if table_name == 'insert_log':
-        json_data = mylo_db.insert_log.find({}, {"date_time": 1, "id": 1}).sort("date_time", -1).limit(1)
-        str_data = str(json_data[0]['id'])
+        json_data = mylo_db.insert_log.find({}, {"date_time": 1, "author_id":1, "id": 1}).sort("date_time", -1).limit(1)
+        id_data = str(json_data[0]['id'])
+        auth_id_data = str(json_data[0]['author_id'])
     elif table_name == 'insert_processed_log':
         json_data = mylo_db.insert_processed_log.find({}, {"date_time": 1, "file_modified_date": 1}).sort("date_time",
                                                                                                           -1).limit(1)
         str_data = str(json_data[0]['file_modified_date'])
+        auth_id_data = ''
 
-    return str_data
+    return str_data, auth_id_data
