@@ -174,7 +174,7 @@ def get_recent_tweets(query_string, token, start_time, end_time) -> pd.DataFrame
     return df
 
 
-def write_tweets_s3_bucket(df: pd.DataFrame, file_name: str) -> None:
+def write_tweets_s3_bucket(df: pd.DataFrame, file_name: str, auth_id: str) -> None:
     """ Writes tweet data from twitter to s3, in json format
 
     :param df: DataFrame which is forwarded from function which pulls data
@@ -188,11 +188,11 @@ def write_tweets_s3_bucket(df: pd.DataFrame, file_name: str) -> None:
             s3 = create_boto3(True)
 
             print('Copying json data to s3')
-            last_tweet_id, author_id = get_last_tweet_data_s3()
+            last_tweet_id = get_last_tweet_data_s3(auth_id)
             print(last_tweet_id)
-            print(author_id)
+            print(auth_id)
 
-            if int(last_tweet_id) < df.iloc[0]['tweet_id'] and int(author_id) == df.iloc[0]['author_id']:
+            if int(last_tweet_id) < df.iloc[0]['tweet_id']:
 
                 save_last_tweet_data_s3(df.iloc[0]['tweet_id'], df.iloc[0]['author_id'])
                 json_file = df.to_json(orient='records')
@@ -214,7 +214,7 @@ def write_tweets_s3_bucket(df: pd.DataFrame, file_name: str) -> None:
         print('Json file is empty, nothing to insert in s3')
 
 
-def write_tweets_s3_mongodb() -> None:
+def write_tweets_s3_mongodb(auth_id: str) -> None:
     """ Writes twitter data from s3 to mongodb
 
     """
@@ -226,14 +226,14 @@ def write_tweets_s3_mongodb() -> None:
     db_host = db_param['host']
     db_user = db_param['user']
     s3 = create_boto3(False)
-    data_bucket = s3.list_objects(Bucket='mylosh', Prefix='tweet/')['Contents']
+    data_bucket = s3.list_objects(Bucket='mylosh', Prefix=F'tweet/id_{auth_id}')['Contents']
     # getting the last modified date file on s3
     list_s3_obj = [obj['Key'] for obj in
                    sorted(data_bucket, key=lambda obj: int(obj['LastModified'].strftime('%s')), reverse=True)]
     obj = s3.get_object(Bucket='mylosh', Key=list_s3_obj[0])
     j = json.loads(obj['Body'].read().decode())
 
-    tweet_id_data, auth_id_data = get_last_tweet_id_mongo(table_name)
+    tweet_id_data = get_last_tweet_id_mongo(table_name, auth_id)
 
     print('Lastes tweet id in mongo ' + tweet_id_data)
     print('Latest tweet id in json file ' + str(j[0]['tweet_id']))
@@ -248,7 +248,7 @@ def write_tweets_s3_mongodb() -> None:
         try:
             mylo_db.tweet_raw.insert_many(j)
             print('Saving insert log')
-            save_last_tweet_id_db(j[0]['tweet_id'], j[0]['author_id'])
+            save_last_tweet_id_mongo(j[0]['tweet_id'], auth_id)
             print(F'Finished insert log, number of records: {len(j)}')
         except Exception as e:
             print('Exception happened in mongodb insert, it is', e.__class__)
@@ -340,7 +340,7 @@ def save_last_tweet_data_s3(id: str, author_id: str):
 
     json_file = json.dumps(dictionary_tweet_id, default=str)
 
-    s3object = s3.Object('mylosh', F'tweet_id/tweet_id.json')
+    s3object = s3.Object('mylosh', F'tweet_id/{str(author_id)}_id.json')
     s3object.put(
         Body=(bytes(json_file.encode('UTF-8'))), ContentType='application/json'
     )
@@ -348,28 +348,27 @@ def save_last_tweet_data_s3(id: str, author_id: str):
     print('Finished last tweet id')
 
 
-def get_last_tweet_data_s3():
+def get_last_tweet_data_s3(auth_id: str):
     """
 
     """
 
     s3 = create_boto3(False)
 
-    obj = s3.get_object(Bucket='mylosh', Key=F'tweet_id/tweet_id.json')
-    j = json.loads(obj['Body'].read().decode())
-    j_id = str(j['id'])
-
     try:
-        j_author_id = str(j['author_id'])
+        obj = s3.get_object(Bucket='mylosh', Key=F'tweet_id/{auth_id}_id.json')
+        j = json.loads(obj['Body'].read().decode())
+        j_id = str(j['id'])
     except Exception as e:
-        print('Exception', e.__class__)
-        j_author_id = ""
+        print('Error while getting the bucket for last tweet_id', e.__class__)
+        print(e)
+        j_id = "1"
 
     # place to return the whole object or similar
-    return j_id, j_author_id
+    return j_id
 
 
-def save_last_tweet_id_db(id, author_id):
+def save_last_tweet_id_mongo(id, author_id):
     """
 
     """
@@ -396,7 +395,7 @@ def save_last_tweet_id_db(id, author_id):
         print(e)
 
 
-def get_last_tweet_id_mongo(table_name: str) -> str:
+def get_last_tweet_id_mongo(table_name: str, auth_id: str) -> str:
     """
 
     """
@@ -412,13 +411,20 @@ def get_last_tweet_id_mongo(table_name: str) -> str:
     mylo_db = client["mylocode"]
 
     if table_name == 'insert_log':
-        json_data = mylo_db.insert_log.find({}, {"date_time": 1, "author_id":1, "id": 1}).sort("date_time", -1).limit(1)
-        id_data = str(json_data[0]['id'])
-        auth_id_data = str(json_data[0]['author_id'])
+        json_data = mylo_db.insert_log.find({"author_id": str(auth_id)}, {"date_time": 1, "author_id":1, "id": 1}).sort("date_time", -1).limit(1)
+        try:
+            str_data = str(json_data[0]['id'])
+        except Exception as e:
+            print('Exception happened in getting last id in mongo, it is', e.__class__)
+            print(e)
+        #auth_id_data = str(json_data[0]['author_id'])
     elif table_name == 'insert_processed_log':
-        json_data = mylo_db.insert_processed_log.find({}, {"date_time": 1, "file_modified_date": 1}).sort("date_time",
-                                                                                                          -1).limit(1)
-        str_data = str(json_data[0]['file_modified_date'])
-        auth_id_data = ''
+        json_data = mylo_db.insert_processed_log.find({"author_id": str(auth_id)}, {"date_time": 1, "file_modified_date": 1}).sort("date_time",-1).limit(1)
+        try:
+            str_data = str(json_data[0]['file_modified_date'])
+        except Exception as e:
+            print('Exception happened in getting last id in mongo, it is', e.__class__)
+            print(e)
+        #auth_id_data = ''
 
-    return str_data, auth_id_data
+    return str_data

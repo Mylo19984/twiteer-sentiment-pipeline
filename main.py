@@ -23,11 +23,13 @@ end_time = F'{end_date}T12:00:00Z'
 # file name
 file_name = F'id_{query_string}_{ts}'
 # highest tweet id, from which function will pull tweets
-last_tweet_id, author_id = get_last_tweet_data_s3()
+last_tweet_id = get_last_tweet_data_s3(query_string)
 highest_tweet_id = last_tweet_id if len(last_tweet_id) > 0 else 1
-#highest_tweet_id = 1579067179659845633
+# highest_tweet_id = 1579067179659845633
 
 df_search = get_recent_user_tweets(query_string, token, start_time, end_time, highest_tweet_id)
 save(df_search, F'data/{file_name}.json')
-write_tweets_s3_bucket(df_search, file_name)
-write_tweets_s3_mongodb()
+write_tweets_s3_bucket(df_search, file_name, query_string)
+
+# temporarily turned off
+write_tweets_s3_mongodb(query_string)
