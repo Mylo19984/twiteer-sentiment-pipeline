@@ -107,21 +107,21 @@ def create_schema():
                     )
                     , True),
         StructField("referenced_tweets_list",
-                    StructType([
+                    ArrayType(StructType([
                         StructField("data",
                                     StructType([
                                         StructField("type", StringType(), True),
                                         StructField("id", StringType(), True)
                                     ])
                                     , True)
-                    ])
+                    ]))
                     , True)
     ])
 
     return schema_tweet
 
 
-def pulling_json_s3_for_spark():
+def pulling_json_s3_for_spark(auth_id: str):
     """ Pulls the json object from s3, and returns it as json file
 
     :return: json file needed for upload to pyspark dataframe
@@ -131,9 +131,9 @@ def pulling_json_s3_for_spark():
 
     table_name = 'insert_processed_log'
     # exiting code without the data in loger
-    #last_modified_date = get_last_tweet_id_mongo(table_name)
-    #last_modified_date_int = datetime.timestamp(datetime.strptime(last_modified_date, "%Y-%m-%d %H:%M:%S"))
-    last_modified_date_int = 0
+    last_modified_date = get_last_tweet_id_mongo(table_name, auth_id)
+    last_modified_date_int = datetime.timestamp(datetime.strptime(last_modified_date, "%Y-%m-%d %H:%M:%S"))
+    #last_modified_date_int = 0
     s3 = create_boto3(True)
     bucket = s3.Bucket('mylosh')
 
@@ -142,7 +142,7 @@ def pulling_json_s3_for_spark():
     #last_modified_date = 0
     table_name = 'insert_processed_log'
 
-    for obj in bucket.objects.filter(Prefix='tweet/'):
+    for obj in bucket.objects.filter(Prefix=F'tweet/id_{auth_id}'):
 
         if (obj.get()['ContentLength'] > 0) and (int(obj.get()['LastModified'].strftime('%s')) > last_modified_date_int):
             body = json.load(obj.get()['Body'])

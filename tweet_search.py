@@ -417,7 +417,8 @@ def get_last_tweet_id_mongo(table_name: str, auth_id: str) -> str:
         except Exception as e:
             print('Exception happened in getting last id in mongo, it is', e.__class__)
             print(e)
-        #auth_id_data = str(json_data[0]['author_id'])
+            str_data = "0"
+
     elif table_name == 'insert_processed_log':
         json_data = mylo_db.insert_processed_log.find({"author_id": str(auth_id)}, {"date_time": 1, "file_modified_date": 1}).sort("date_time",-1).limit(1)
         try:
@@ -425,6 +426,6 @@ def get_last_tweet_id_mongo(table_name: str, auth_id: str) -> str:
         except Exception as e:
             print('Exception happened in getting last id in mongo, it is', e.__class__)
             print(e)
-        #auth_id_data = ''
+            str_data = "2022-10-31 16:48:57"
 
     return str_data

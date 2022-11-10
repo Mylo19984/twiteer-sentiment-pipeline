@@ -79,8 +79,12 @@ db_pass = db_param['pass']
 db_host = db_param['host']
 db_user = db_param['user']
 
+# auth_id var
+auth_id = "44196397"
+
 # creation of connection to s3, and getting the json file
-json_list, no_of_items, modified_date_marker = pulling_json_s3_for_spark()
+json_list, no_of_items, modified_date_marker = pulling_json_s3_for_spark(auth_id)
+print(F"Modifed  data marker is {modified_date_marker}")
 
 # inserting json file into the spark dataframe
 spark = (SparkSession
@@ -96,8 +100,10 @@ emp_RDD = spark.sparkContext.emptyRDD()
 df_all_json = spark.createDataFrame(data=emp_RDD, schema=schema_tweet)
 
 for i in range(0, no_of_items):
-    print(json_list[i])
-    print(no_of_items)
+    #print(json_list[i])
+    print(F"Number of items in list {no_of_items}")
+    df_json_csv = spark.createDataFrame(json_list[i])
+
     df_json = spark.createDataFrame(json_list[i], schema=schema_tweet)
     df_all_json = df_all_json.union(df_json)
 
@@ -139,7 +145,7 @@ print('insert db')
 try:
     mylo_db.tweet.insert_many(df_insert_db)
     # insert modified date of last s3 file;
-    save_last_tweet_id_db(modified_date_marker)
+    save_last_tweet_id_db(modified_date_marker, auth_id)
 except Exception as e:
     print('Exception happened in inserting final data to mongoDb, it is', e.__class__)
     print(e)
