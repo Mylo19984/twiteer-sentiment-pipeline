@@ -133,6 +133,8 @@ def pulling_json_s3_for_spark(auth_id: str):
     # exiting code without the data in loger
     last_modified_date = get_last_tweet_id_mongo(table_name, auth_id)
     last_modified_date_int = datetime.timestamp(datetime.strptime(last_modified_date, "%Y-%m-%d %H:%M:%S"))
+    print(F"db date is {last_modified_date}")
+    print(F"db date is {last_modified_date_int}")
     #last_modified_date_int = 0
     s3 = create_boto3(True)
     bucket = s3.Bucket('mylosh')

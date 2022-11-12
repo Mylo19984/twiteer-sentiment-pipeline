@@ -1,6 +1,8 @@
 # Twitter sentiment analysis
 
-Making the pipeline which will pull twitter data and do the sentiment analysis on tweets. Then it will map tweet with stock or crypto coin and send the automatic email to the user with tweet and graph of price history, thus user can check if maybe the stock/crypto is worth buying.
+Making the pipeline which will pull twitter data and perform the sentiment analysis on tweets. Then it will map tweet with stock or crypto coin and send the automatic email to the user with tweet and graph of a price history, thus user can check if maybe the stock/crypto is worth buying.
+
+General idea of the project is to catch if there is correlation of tweets regarding market and stocks/crypto coin prices.
 
 #### The project is consisted of:
 - python connection (library tweepy) to tweets
@@ -13,7 +15,7 @@ Making the pipeline which will pull twitter data and do the sentiment analysis o
 
 First step in the process is that python with tweepy connects to the twitter api, and get the tweets from the focus user. This tweets, in json format, are being saved on s3. Since this data is in raw format, the transformation of it is being done on pyspark (cleaning the text in tweets from unnecessary data, doing the sentiment analysis and adding the date fields). In this process the sentiment analysis is being done through the hugging face and the model: "cardiffnlp/twitter-roberta-base-sentiment-latest". The last step of the process is inserting data in the mongoDb (tweet table).
 
-This process has the control of highest tweet_id pulled from tweepy, uploaded in s3, and inserted in mongoDb; thus duplicated data is not inserted in process, and also the process is optimised not to do duplicated actions.
+This process has the control of highest tweet_id pulled from tweepy (and filtered by author_id), uploaded in s3, and inserted in mongoDb; thus duplicated data is not inserted in process, and also the process is optimised not to do duplicated actions.
 
 ### Files in the project
 
@@ -82,3 +84,4 @@ dayofmonth - tweets dayofmonth
 ### Development phase
 
 - The python code will map tweet with stock or crypto coin and send the automatic email to the user with tweet and graph of price history, thus user can check if maybe the stock/crypto is worth buying.
+- User can provide a list of twitter authors for whom wants to pull tweets

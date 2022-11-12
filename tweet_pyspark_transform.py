@@ -84,7 +84,7 @@ auth_id = "44196397"
 
 # creation of connection to s3, and getting the json file
 json_list, no_of_items, modified_date_marker = pulling_json_s3_for_spark(auth_id)
-print(F"Modifed  data marker is {modified_date_marker}")
+print(F"Number of items in list {no_of_items}")
 
 # inserting json file into the spark dataframe
 spark = (SparkSession
@@ -100,9 +100,7 @@ emp_RDD = spark.sparkContext.emptyRDD()
 df_all_json = spark.createDataFrame(data=emp_RDD, schema=schema_tweet)
 
 for i in range(0, no_of_items):
-    #print(json_list[i])
-    print(F"Number of items in list {no_of_items}")
-    df_json_csv = spark.createDataFrame(json_list[i])
+    print(json_list[i])
 
     df_json = spark.createDataFrame(json_list[i], schema=schema_tweet)
     df_all_json = df_all_json.union(df_json)
